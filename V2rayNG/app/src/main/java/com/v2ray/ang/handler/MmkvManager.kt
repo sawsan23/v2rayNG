@@ -92,9 +92,13 @@ object MmkvManager {
     }
 
     fun decodeServerConfig(guid: String): ProfileItem? {
-        if (guid.isBlank()) return null
+        if (guid.isBlank()) {
+            return null
+        }
         val json = profileFullStorage.decodeString(guid)
-        if (json.isNullOrBlank()) return null
+        if (json.isNullOrBlank()) {
+            return null
+        }
         return JsonUtil.fromJsonSafe(json, ProfileItem::class.java)
     }
 
@@ -118,7 +122,9 @@ object MmkvManager {
     }
 
     fun removeServer(guid: String) {
-        if (guid.isBlank()) return
+        if (guid.isBlank()) {
+            return
+        }
         val config = decodeServerConfig(guid)
         val subId = getSubscriptionId(config?.subscriptionId)
         val serverList = decodeServerList(subId)
@@ -164,14 +170,20 @@ object MmkvManager {
     }
 
     fun decodeServerAffiliationInfo(guid: String): ServerAffiliationInfo? {
-        if (guid.isBlank()) return null
+        if (guid.isBlank()) {
+            return null
+        }
         val json = serverAffStorage.decodeString(guid)
-        if (json.isNullOrBlank()) return null
+        if (json.isNullOrBlank()) {
+            return null
+        }
         return JsonUtil.fromJsonSafe(json, ServerAffiliationInfo::class.java)
     }
 
     fun encodeServerTestDelayMillis(guid: String, testResult: Long) {
-        if (guid.isBlank()) return
+        if (guid.isBlank()) {
+            return
+        }
         val aff = decodeServerAffiliationInfo(guid) ?: ServerAffiliationInfo()
         aff.testDelayMillis = testResult
         serverAffStorage.encode(guid, JsonUtil.toJson(aff))
@@ -235,7 +247,9 @@ object MmkvManager {
 
     private fun initSubsList() {
         val subsList = decodeSubsList()
-        if (subsList.isNotEmpty()) return
+        if (subsList.isNotEmpty()) {
+            return
+        }
         subStorage.allKeys()?.forEach { key ->
             subsList.add(key)
         }
@@ -334,18 +348,39 @@ object MmkvManager {
     //endregion
 
     //region settings
-    fun encodeSettings(key: String, value: String?): Boolean = settingsStorage.encode(key, value)
-    fun encodeSettings(key: String, value: Int): Boolean = settingsStorage.encode(key, value)
-    fun encodeSettings(key: String, value: Long): Boolean = settingsStorage.encode(key, value)
-    fun encodeSettings(key: String, value: Float): Boolean = settingsStorage.encode(key, value)
-    fun encodeSettings(key: String, value: Boolean): Boolean = settingsStorage.encode(key, value)
-    fun encodeSettings(key: String, value: MutableSet<String>): Boolean = settingsStorage.encode(key, value)
+    fun encodeSettings(key: String, value: String?): Boolean {
+        return settingsStorage.encode(key, value)
+    }
+
+    fun encodeSettings(key: String, value: Int): Boolean {
+        return settingsStorage.encode(key, value)
+    }
+
+    fun encodeSettings(key: String, value: Long): Boolean {
+        return settingsStorage.encode(key, value)
+    }
+
+    fun encodeSettings(key: String, value: Float): Boolean {
+        return settingsStorage.encode(key, value)
+    }
+
+    // 🚨 Write Blocker: UI မှ အတင်းရေးသွင်းခြင်းကို တားမြစ်မည်
+    fun encodeSettings(key: String, value: Boolean): Boolean {
+        if (key == "pref_hev_socks5_tunnel_enable") {
+            return settingsStorage.encode(key, false)
+        }
+        return settingsStorage.encode(key, value)
+    }
+
+    fun encodeSettings(key: String, value: MutableSet<String>): Boolean {
+        return settingsStorage.encode(key, value)
+    }
 
     fun decodeSettingsString(key: String): String? {
         return decodeSettingsString(key, null)
     }
 
-    // 💡 SS VPN Custom Default Strings
+    // 🚨 Custom Default Strings with Hard Override
     fun decodeSettingsString(key: String, defaultValue: String?): String? {
         val actualDefault = when (key) {
             "pref_ui_mode_night" -> "2" // Dark Mode Force
@@ -361,14 +396,22 @@ object MmkvManager {
             "pref_hev_socks5_tunnel_timeout" -> "300,60"
             else -> defaultValue
         }
+        // Force write initial defaults if they don't exist
+        if (!settingsStorage.containsKey(key)) {
+            settingsStorage.encode(key, actualDefault)
+        }
         return settingsStorage.decodeString(key, actualDefault) ?: actualDefault
     }
 
-    // 💡 SS VPN Custom Default Integers
+    // 🚨 Custom Default Integers with Hard Override
     fun decodeSettingsInt(key: String, defaultValue: Int): Int {
         val actualDefault = when (key) {
             "pref_delay_test_concurrency" -> 16
             else -> defaultValue
+        }
+        // Force write initial defaults if they don't exist
+        if (!settingsStorage.containsKey(key)) {
+            settingsStorage.encode(key, actualDefault)
         }
         return settingsStorage.decodeInt(key, actualDefault)
     }
@@ -385,20 +428,23 @@ object MmkvManager {
         return decodeSettingsBool(key, false)
     }
 
-    // 💡 SS VPN Custom Default Booleans
+    // 🚨 Custom Default Booleans with Hard Override and Hev TUN Blocker
     fun decodeSettingsBool(key: String, defaultValue: Boolean): Boolean {
-        // 🚨 Hev TUN Feature အား လုံးဝ အလုပ်မလုပ်အောင် အမြစ်ပြတ် ပိတ်ပစ်ခြင်း
-        if (key == "pref_hev_socks5_tunnel_enable") return false
+        // Force Hev TUN off unconditionally
+        if (key == "pref_hev_socks5_tunnel_enable") {
+            settingsStorage.encode(key, false)
+            return false
+        }
 
         val actualDefault = when (key) {
             // ON ဖြစ်ရမည့် Setting များ
             "pref_speed_enabled",
             "pref_auto_connect",
+            "pref_start_bgn_enable",
             "pref_socks_udp",
             "pref_routing_custom_dns",
             "pref_fake_dns",
             "pref_sniffing_enabled",
-            "pref_start_bgn_enable",
             "pref_local_proxy_enabled" -> true
 
             // OFF ဖြစ်ရမည့် Setting များ
@@ -416,6 +462,12 @@ object MmkvManager {
             
             else -> defaultValue
         }
+
+        // Force write initial defaults if they don't exist
+        if (!settingsStorage.containsKey(key)) {
+            settingsStorage.encode(key, actualDefault)
+        }
+
         return settingsStorage.decodeBool(key, actualDefault)
     }
 
