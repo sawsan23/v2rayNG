@@ -6,11 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.ss.vpn"
+-    namespace = "com.ss.vpn"  
++    namespace = "com.v2ray.ang"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.ss.vpmn"
+-        applicationId = "com.ss.vpn"
++        applicationId = "com.ss.vpn" 
         minSdk = 24
         targetSdk = 37
         versionCode = 742
@@ -112,7 +114,7 @@ android {
                     else
                         "universal"
 
-                    output.outputFileName = "ssvpn_${variant.versionName}_${abi}.apk"
+                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
                     if (versionCodes.containsKey(abi)) {
                         output.versionCodeOverride =
                             (1000000 * versionCodes[abi]!!).plus(variant.versionCode)
