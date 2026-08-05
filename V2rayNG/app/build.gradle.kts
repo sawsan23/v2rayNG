@@ -6,13 +6,11 @@ plugins {
 }
 
 android {
--    namespace = "com.ss.vpn"  
-+    namespace = "com.v2ray.ang"
+  namespace = "com.v2ray.ang"
     compileSdk = 37
 
     defaultConfig {
--        applicationId = "com.ss.vpn"
-+        applicationId = "com.ss.vpn" 
+        applicationId = "com.ss.vpn" 
         minSdk = 24
         targetSdk = 37
         versionCode = 742
