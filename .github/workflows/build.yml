@@ -1,9 +1,12 @@
 name: Build ss VPN APK
 
 on:
-  push:
-    branches: [ master, main ]
-  workflow_dispatch:
+  # Push လုပ်တိုင်း အလိုအလျောက် Build တာကို ပိတ်ထားလိုက်ပါပြီ
+  workflow_dispatch: # ဤစာကြောင်းက Actions tab မှနေ၍ ကိုယ်တိုင် Run workflow နှိပ်မှသာ အလုပ်လုပ်စေမည်ဖြစ်သည်
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
