@@ -103,8 +103,8 @@ class MainActivity : HelperBaseComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 LogUtil.d(AppConfig.TAG, "Starting Background Auto-Setup (Update -> Ping -> Sort)")
-                // မှတ်ချက်: နောက်အဆင့်တွင် FastConnectManager.kt အား တည်ဆောက်ပြီး ဤနေရာမှ လှမ်းခေါ်ပါမည်။
-                // FastConnectManager.performStartupTasks(applicationContext, mainViewModel)
+                 mainViewModel.startDashboardAutoSetup()
+
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Auto-Setup Failed", e)
             }
