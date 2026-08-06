@@ -213,14 +213,19 @@ fun HiddifyDashboard(
         verticalArrangement = Arrangement.Center
     ) {
         
-        // --- Status Text (Connected / Not Connected) ---
+      // --- Status Text (Connected / Connecting / Not Connected) ---
         Text(
-            text = if (isRunning) "Connected" else "Not Connected",
+            text = when {
+                displayText == "Connecting..." -> "Connecting..."
+                isRunning -> "Connected"
+                else -> "Not Connected"
+            },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = if (isRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isRunning || displayText == "Connecting...") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
+
 
         // --- Delay (Ping) Indicator ---
         if (isRunning) {
@@ -264,7 +269,7 @@ fun HiddifyDashboard(
 
         Spacer(modifier = Modifier.height(64.dp))
 
-        // --- Info Card (Cloudflare Trace & Routing Info) ---
+                // --- Info Card (Cloudflare Trace & Routing Info) ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -280,8 +285,9 @@ fun HiddifyDashboard(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 // ဒီနေရာမှာ Cloudflare Trace Data (IP, Colo, Warp) ကို လာပြပါမည် (Phase 5)
+                val infoText = if (isRunning || displayText == "Connecting...") displayText else "Ready to connect..."
                 Text(
-                    text = if (isRunning) displayText else "Ready to connect...",
+                    text = infoText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Left
