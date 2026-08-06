@@ -646,6 +646,13 @@ class MainViewModel(
         _uiState.update { it.copy(selectedGuid = dataSource.getSelectServer()) }
     }
 
+    // --- အသစ်ပေါင်းထည့်မည့် ကုဒ်စတင် ---
+    fun updateStatusText(text: String) {
+        _uiState.update { it.copy(statusText = text) }
+    }
+    // --- အသစ်ပေါင်းထည့်မည့် ကုဒ်အဆုံး ---
+
+
     fun removeServerAndRefresh(guid: String) {
         if (guid == uiState.value.selectedGuid) {
             toast(R.string.toast_action_not_allowed)
