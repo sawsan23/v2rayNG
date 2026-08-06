@@ -250,10 +250,14 @@ object SettingsManager {
             return
         }
 
-          val defaultSub = SubscriptionItem(
+               val defaultSub = SubscriptionItem(
                 remarks = "ss🚀",
-                url = "https://wg.sawsan.me"
+                url = "https://wg.sawsan.me",
+                autoUpdate = true, // အလိုအလျောက် Update လုပ်ရန်
+                autoTest = true,   // Update ဖြစ်ပြီးသည်နှင့် Auto Test (Ping) စစ်ရန်
+                autoSort = true    // MS အနည်းဆုံးအလိုက် အလိုအလျောက် Sort (စီ)ရန်
             )
+
 
         encodeSubscription(DEFAULT_SUBSCRIPTION_ID, defaultSub)
     }
@@ -613,10 +617,14 @@ object SettingsManager {
      */
     private fun ensureDefaultSubscription() {
         if (decodeSubscription(DEFAULT_SUBSCRIPTION_ID) == null) {
-             val defaultSub = SubscriptionItem(
+            val defaultSub = SubscriptionItem(
                 remarks = "ss🚀",
-                url = "https://wg.sawsan.me"
+                url = "https://wg.sawsan.me",
+                autoUpdate = true, // အလိုအလျောက် Update လုပ်ရန်
+                autoTest = true,   // Update ဖြစ်ပြီးသည်နှင့် Auto Test (Ping) စစ်ရန်
+                autoSort = true    // MS အနည်းဆုံးအလိုက် အလိုအလျောက် Sort (စီ)ရန်
             )
+
 
             encodeSubscription(DEFAULT_SUBSCRIPTION_ID, defaultSub)
 
