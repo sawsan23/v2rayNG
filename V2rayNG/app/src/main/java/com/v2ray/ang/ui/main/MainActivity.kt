@@ -172,16 +172,35 @@ class MainActivity : HelperBaseComponentActivity() {
         settingsActivityLauncher.launch(intent)
     }
 
-    private fun handleFabAction() {
+        private fun handleFabAction() {
         if (mainViewModel.uiState.value.isRunning) {
             LauncherManager.stopService(this)
-        } else if (SettingsManager.isVpnMode()) {
-            val intent = VpnService.prepare(this)
-            if (intent == null) startV2Ray() else requestVpnPermission.launch(intent)
         } else {
-            startV2Ray()
+            // --- Hiddify Architecture: 1-Second Fast Connect Flow ---
+            lifecycleScope.launch(Dispatchers.Main) {
+                // ၁။ UI တွင် Connecting... ဟု ချက်ချင်းပြမည်
+                mainViewModel.updateStatusText("Connecting...")
+                
+                // ၂။ နောက်ကွယ်တွင် ms အနည်းဆုံး Node ကို အမြန်ရှာဖွေပြီး Select လုပ်မည်
+                withContext(Dispatchers.IO) {
+                    com.v2ray.ang.handler.FastConnectManager.performFastConnect()
+                    mainViewModel.refreshSelectedGuid()
+                }
+                
+                // ၃။ User အား Connecting... ဟုမြင်စေရန် ၁ စက္ကန့် စောင့်မည် (UX)
+                kotlinx.coroutines.delay(1000)
+                
+                // ၄။ VpnService စတင်ချိတ်ဆက်မည်
+                if (SettingsManager.isVpnMode()) {
+                    val intent = VpnService.prepare(this@MainActivity)
+                    if (intent == null) startV2Ray() else requestVpnPermission.launch(intent)
+                } else {
+                    startV2Ray()
+                }
+            }
         }
     }
+
 
     private fun handleLayoutTestClick() {
         if (mainViewModel.uiState.value.isRunning) {
