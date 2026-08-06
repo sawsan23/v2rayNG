@@ -331,16 +331,14 @@ fun SettingsScreen(
                     title = stringResource(R.string.title_pref_enable_local_proxy),
                     summary = stringResource(R.string.summary_pref_enable_local_proxy),
                     checked = enableLocalProxy,
-                    enabled = !localProxyForced,
                     onCheckedChange = {
-                        if (!localProxyForced) {
-                            enableLocalProxy = it
-                            if (!it && appendHttpProxy) {
-                                appendHttpProxy = false
-                            }
+                        enableLocalProxy = it
+                        if (!it && appendHttpProxy) {
+                            appendHttpProxy = false
                         }
                     }
                 )
+
                 SettingsSwitchItem(
                     title = stringResource(R.string.title_pref_proxy_sharing_enabled),
                     summary = stringResource(R.string.summary_pref_proxy_sharing_enabled),
