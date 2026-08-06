@@ -86,8 +86,8 @@ class TProxyService(
                 appendLine("  password: '${escapedSocksPassword}'")
             }
 
-            // Read-write timeout settings
-            val timeoutSetting = MmkvManager.decodeSettingsString(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT) ?: AppConfig.HEVTUN_RW_TIMEOUT
+            // Read-write timeout settings (AppConfig keys are removed, using hardcoded static values)
+            val timeoutSetting = "300,60"
             val parts = timeoutSetting.split(",")
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
@@ -97,7 +97,8 @@ class TProxyService(
             appendLine("misc:")
             appendLine("  tcp-read-write-timeout: ${tcpTimeout * 1000}")
             appendLine("  udp-read-write-timeout: ${udpTimeout * 1000}")
-            appendLine("  log-level: ${MmkvManager.decodeSettingsString(AppConfig.PREF_HEV_TUNNEL_LOGLEVEL) ?: "warn"}")
+            // Log level AppConfig key is removed, using hardcoded static value
+            appendLine("  log-level: warn")
         }
     }
 
