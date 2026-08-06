@@ -24,6 +24,7 @@ import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.handler.SettingsManager
+// import com.v2ray.ang.handler.FastConnectManager // (နောက်အဆင့်တွင် ဖန်တီးမည့်ဖိုင်)
 import com.v2ray.ang.ui.AboutActivity
 import com.v2ray.ang.ui.backup.BackupActivity
 import com.v2ray.ang.ui.base.HelperBaseComponentActivity
@@ -95,6 +96,19 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+
+        // --- Hiddify Architecture: Auto Background Setup ---
+        // App ဖွင့်သည်နှင့် နောက်ကွယ်မှ Built-in Sub အား Update လုပ်ခြင်း၊ Auto Ping စစ်ခြင်းနှင့် 
+        // MS အနည်းဆုံးကို ကြိုတင် ရွေးချယ်ထားခြင်းများကို ဝင်ရောက်စွက်ဖက်မှုမရှိဘဲ (Silently) လုပ်ဆောင်မည်။
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                LogUtil.d(AppConfig.TAG, "Starting Background Auto-Setup (Update -> Ping -> Sort)")
+                // မှတ်ချက်: နောက်အဆင့်တွင် FastConnectManager.kt အား တည်ဆောက်ပြီး ဤနေရာမှ လှမ်းခေါ်ပါမည်။
+                // FastConnectManager.performStartupTasks(applicationContext, mainViewModel)
+            } catch (e: Exception) {
+                LogUtil.e(AppConfig.TAG, "Auto-Setup Failed", e)
+            }
+        }
     }
 
     @Composable
