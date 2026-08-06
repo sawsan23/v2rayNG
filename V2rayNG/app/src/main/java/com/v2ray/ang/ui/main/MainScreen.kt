@@ -67,6 +67,11 @@ fun MainScreen(
     val displayText = uiState.statusText
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
+    // --- Hiddify Architecture: Collect real-time delay & CF Trace from ViewModel ---
+    val delayMs by mainViewModel.delayMs.collectAsStateWithLifecycle()
+    val cfTraceInfo by mainViewModel.cfTraceInfo.collectAsStateWithLifecycle()
+    // -----------------------------------------------------------------------------
+
     val isDarkTheme = LocalDarkTheme.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -166,11 +171,10 @@ fun MainScreen(
                     .padding(innerPadding),
                 isRunning = isRunning,
                 displayText = displayText,
-                // Ping ms ကို လက်ရှိ delay အဖြစ် ယူဆသည် (နောက်ပိုင်း ViewModel မှ အတိအကျ ယူမည်)
-                delayMs = uiState.selectedGuid?.let { "145 ms" } ?: "0 ms", 
+                delayMs = delayMs, // ViewModel မှ အမှန်တကယ်ရလာသော Ping (ms)
+                cfTraceInfo = cfTraceInfo, // ViewModel မှ အမှန်တကယ်ရလာသော CF Trace (IP, WARP)
                 onToggleConnection = { onAction(MainAction.ToggleService) },
                 onAutoTestAndSort = {
-                    // Update Sub -> Test -> Sort အား ဆင့်ကဲခေါ်မည်
                     onAction(MainAction.UpdateSubscriptions)
                     scope.launch {
                         kotlinx.coroutines.delay(2000)
@@ -190,6 +194,7 @@ fun HiddifyDashboard(
     isRunning: Boolean,
     displayText: String,
     delayMs: String,
+    cfTraceInfo: String,
     onToggleConnection: () -> Unit,
     onAutoTestAndSort: () -> Unit
 ) {
@@ -213,7 +218,7 @@ fun HiddifyDashboard(
         verticalArrangement = Arrangement.Center
     ) {
         
-      // --- Status Text (Connected / Connecting / Not Connected) ---
+        // --- Status Text (Connected / Connecting / Not Connected) ---
         Text(
             text = when {
                 displayText == "Connecting..." -> "Connecting..."
@@ -226,9 +231,8 @@ fun HiddifyDashboard(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-
         // --- Delay (Ping) Indicator ---
-        if (isRunning) {
+        if (isRunning || delayMs != "0 ms") {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Speed,
@@ -269,7 +273,7 @@ fun HiddifyDashboard(
 
         Spacer(modifier = Modifier.height(64.dp))
 
-                // --- Info Card (Cloudflare Trace & Routing Info) ---
+        // --- Info Card (Cloudflare Trace & Routing Info) ---
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -284,8 +288,14 @@ fun HiddifyDashboard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                // ဒီနေရာမှာ Cloudflare Trace Data (IP, Colo, Warp) ကို လာပြပါမည် (Phase 5)
-                val infoText = if (isRunning || displayText == "Connecting...") displayText else "Ready to connect..."
+                
+                // --- Cloudflare Trace Data (IP, WARP, Colo) သို့မဟုတ် Connecting စာသားကို တိုက်ရိုက်ပြသမည် ---
+                val infoText = when {
+                    displayText == "Connecting..." -> "Connecting to fastest node..."
+                    isRunning -> cfTraceInfo // IP, WARP, Location အချက်အလက်များ
+                    else -> "Ready to connect..."
+                }
+                
                 Text(
                     text = infoText,
                     style = MaterialTheme.typography.bodyMedium,
