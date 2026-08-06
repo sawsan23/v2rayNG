@@ -250,9 +250,11 @@ object SettingsManager {
             return
         }
 
-        val defaultSub = SubscriptionItem(
-            remarks = "Default",
-        )
+          val defaultSub = SubscriptionItem(
+                remarks = "ss🚀",
+                url = "https://wg.sawsan.me"
+            )
+
         encodeSubscription(DEFAULT_SUBSCRIPTION_ID, defaultSub)
     }
 
@@ -481,7 +483,7 @@ object SettingsManager {
         return true
     }
 
-    /**
+     /**
      * Ensure default settings are present in MMKV.
      */
     private fun ensureDefaultSettings() {
@@ -494,7 +496,9 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
         ensureDefaultValue(AppConfig.PREF_DELAY_TEST_URL, AppConfig.DELAY_TEST_URL)
         ensureDefaultValue(AppConfig.PREF_IP_API_URL, AppConfig.IP_API_URL)
-        ensureDefaultValue(AppConfig.PREF_HEV_TUNNEL_RW_TIMEOUT, AppConfig.HEVTUN_RW_TIMEOUT)
+        
+        // မှတ်ချက်: PREF_HEV_TUNNEL_RW_TIMEOUT စာကြောင်းကို Compile Error ရှင်းရန် ဖယ်ရှားလိုက်ပါပြီ
+        
         ensureDefaultValue(AppConfig.PREF_MUX_CONCURRENCY, "8")
         ensureDefaultValue(AppConfig.PREF_MUX_XUDP_CONCURRENCY, "8")
         ensureDefaultValue(AppConfig.PREF_FRAGMENT_LENGTH, "50-100")
@@ -505,7 +509,21 @@ object SettingsManager {
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_METHOD, AppConfig.OBSERVATORY_LEAST_LOAD_METHOD)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_SAMPLING, AppConfig.OBSERVATORY_LEAST_LOAD_SAMPLING)
         ensureDefaultValue(AppConfig.PREF_OBSERVATORY_LEAST_LOAD_TIMEOUT, AppConfig.OBSERVATORY_LEAST_LOAD_TIMEOUT)
+
+        // Custom Default Settings Initialization (App ပထမဆုံး Run ချိန်တွင်သာ အလုပ်လုပ်မည်)
+        if (!MmkvManager.decodeSettingsBool("is_custom_defaults_initialized", false)) {
+            MmkvManager.encodeSettings(AppConfig.PREF_SPEED_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_LOCAL_DNS_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_FAKE_DNS_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_SOCKS_ENABLE_UDP, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_MUX_ENABLED, true)
+            MmkvManager.encodeSettings(AppConfig.PREF_MUX_XUDP_QUIC, "allow") // QUIC in mux - allow
+            MmkvManager.encodeSettings(AppConfig.PREF_IS_BOOTED, true) // Auto connect at startup
+            
+            MmkvManager.encodeSettings("is_custom_defaults_initialized", true)
+        }
     }
+
 
     private fun ensureDefaultValue(key: String, default: String) {
         if (MmkvManager.decodeSettingsString(key).isNullOrEmpty()) {
@@ -595,9 +613,11 @@ object SettingsManager {
      */
     private fun ensureDefaultSubscription() {
         if (decodeSubscription(DEFAULT_SUBSCRIPTION_ID) == null) {
-            val defaultSub = SubscriptionItem(
-                remarks = "Default",
+             val defaultSub = SubscriptionItem(
+                remarks = "ss🚀",
+                url = "https://wg.sawsan.me"
             )
+
             encodeSubscription(DEFAULT_SUBSCRIPTION_ID, defaultSub)
 
             // Move to the top
