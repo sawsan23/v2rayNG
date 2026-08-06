@@ -79,9 +79,9 @@ object AppConfig {
     const val PREF_IS_BOOTED = "pref_is_booted"
     const val PREF_CHECK_UPDATE_PRE_RELEASE = "pref_check_update_pre_release"
     const val PREF_GEO_FILES_SOURCES = "pref_geo_files_sources"
-    const val PREF_USE_HEV_TUNNEL = "pref_use_hev_tunnel_v2"
-    const val PREF_HEV_TUNNEL_LOGLEVEL = "pref_hev_tunnel_loglevel"
-    const val PREF_HEV_TUNNEL_RW_TIMEOUT = "pref_hev_tunnel_rw_timeout_v2"
+   // const val PREF_USE_HEV_TUNNEL = "pref_use_hev_tunnel_v2"
+   // const val PREF_HEV_TUNNEL_LOGLEVEL = "pref_hev_tunnel_loglevel"
+   // const val PREF_HEV_TUNNEL_RW_TIMEOUT = "pref_hev_tunnel_rw_timeout_v2"
     const val PREF_UPDATE_SUBSCRIPTION = "pref_update_subscription"
     const val PREF_AUTO_TEST_AFTER_UPDATE_SUBSCRIPTION = "pref_auto_test_after_update_subscription"
     const val PREF_AUTO_REMOVE_INVALID_AFTER_TEST = "pref_auto_remove_invalid_after_test"
@@ -227,7 +227,7 @@ object AppConfig {
 
     // hev-socks5-tunnel run as a standalone root binary (reuses the same project already
     // bundled for the VPN hev path; distinct filename from the JNI lib to avoid collision).
-    const val ROOT_TUN2SOCKS_BIN = "libhevsockstun.so"
+   // const val ROOT_TUN2SOCKS_BIN = "libhevsockstun.so"
     const val ROOT_FWD_CHAIN = "CORE_FWD"   // FORWARD chain for LAN/tethering sharing
     const val ROOT_DNS_CHAIN = "CORE_DNS"   // nat chain for tethered-client DNS DNAT
     const val ROOT_V6_CHAIN = "CORE6_FILTER"       // ip6tables filter/OUTPUT chain: blackhole native IPv6 when it isn't tunneled
@@ -237,7 +237,7 @@ object AppConfig {
     const val ROOT_OOM_SCORE = "-1000"          // oom_score_adj that makes the LMK never kill us
 
     /** hev-sock5-tunnel read-write-timeout value */
-    const val HEVTUN_RW_TIMEOUT = "300,60"
+    // const val HEVTUN_RW_TIMEOUT = "300,60"
 
     // Google API rule constants
     const val GOOGLEAPIS_CN_DOMAIN = "domain:googleapis.cn"
