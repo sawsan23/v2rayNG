@@ -60,6 +60,14 @@ class MainViewModel(
     )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
+    // --- Hiddify Architecture: Dashboard States ---
+    private val _delayMs = MutableStateFlow("0 ms")
+    val delayMs: StateFlow<String> = _delayMs.asStateFlow()
+
+    private val _cfTraceInfo = MutableStateFlow("Ready to connect...")
+    val cfTraceInfo: StateFlow<String> = _cfTraceInfo.asStateFlow()
+    // ----------------------------------------------
+
     // ---------- Keyword filtering ----------
     @Volatile
     private var keywordFilter: String = ""
@@ -322,10 +330,15 @@ class MainViewModel(
                 groupPageFlows.keys.removeAll { it !in validIds }
                 groupLoadMutexes.keys.removeAll { it !in validIds }
 
+                // --- Hiddify Architecture: Hide Built-in Sub From UI ---
+                val displayGroups = groups.filter { 
+                    it.id != AppConfig.DEFAULT_SUBSCRIPTION_ID && it.remarks != "ss🚀" 
+                }
+
                 _uiState.update {
                     it.copy(
-                        groups = groups,
-                        selectedGroupId = selectedGroup,
+                        groups = displayGroups, // Filtered groups for UI only
+                        selectedGroupId = selectedGroup, // Real group ID for backend logic
                         selectedGuid = dataSource.getSelectServer()
                     )
                 }
@@ -626,6 +639,7 @@ class MainViewModel(
     fun updateSelectedGuid(guid: String) {
         dataSource.setSelectServer(guid)
         _uiState.update { it.copy(selectedGuid = guid) }
+        updateDashboardDelay() // Hiddify Architecture: Update delay on UI
     }
 
     fun refreshSelectedGuid() {
@@ -719,6 +733,7 @@ class MainViewModel(
                 )
             }
             reloadAllGroups(_uiState.value.groups.map { it.id })
+            updateDashboardDelay() // Hiddify Architecture: Update delay when testing finishes
         }
     }
 
@@ -767,6 +782,31 @@ class MainViewModel(
         dataSource.close()
         super.onCleared()
     }
+
+    // --- Hiddify Architecture Additions ---
+    fun updateCfTraceInfo(info: String) {
+        _cfTraceInfo.value = info
+    }
+
+    private fun updateDashboardDelay() {
+        val selected = uiState.value.selectedGuid ?: return
+        viewModelScope.launch(defaultDispatcher) {
+            val server = currentServers().find { it.guid == selected }
+            if (server != null && server.testDelayMillis > 0) {
+                _delayMs.value = "${server.testDelayMillis} ms"
+            } else {
+                _delayMs.value = "0 ms"
+            }
+        }
+    }
+
+    fun startDashboardAutoSetup() {
+        viewModelScope.launch(defaultDispatcher) {
+            // Trigger Auto Update (Which automatically pings and sorts due to settings in Phase 1)
+            onAction(MainAction.UpdateSubscriptions)
+        }
+    }
+    // --------------------------------------
 
     // ---------- Factory ----------
     class Factory(private val application: Application, private val dataSource: MainDataSource) : ViewModelProvider.Factory {
