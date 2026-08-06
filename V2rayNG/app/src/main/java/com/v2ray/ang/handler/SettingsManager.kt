@@ -54,8 +54,10 @@ object SettingsManager {
     private fun initRoutingRulesets(context: Context) {
         val exist = MmkvManager.decodeRoutingRulesets()
         if (exist.isNullOrEmpty()) {
-            val rulesetList = getPresetRoutingRulesets(context)
-            MmkvManager.encodeRoutingRulesets(rulesetList)
+            // val rulesetList = getPresetRoutingRulesets(context)
+            // MmkvManager.encodeRoutingRulesets(rulesetList)
+            MmkvManager.encodeRoutingRulesets(mutableListOf())
+
         }
     }
 
@@ -435,9 +437,11 @@ object SettingsManager {
      * Check if HEV TUN is being used.
      * @return True if HEV TUN is used, false otherwise.
      */
-    fun isUsingHevTun(): Boolean {
-        return MmkvManager.decodeSettingsBool(AppConfig.PREF_USE_HEV_TUNNEL, true)
-    }
+   fun isUsingHevTun(): Boolean {
+     //   return MmkvManager.decodeSettingsBool(AppConfig.PREF_USE_HEV_TUNNEL, true)
+  return false
+
+   }
 
     /**
      * Check if VPN mode is enabled.
