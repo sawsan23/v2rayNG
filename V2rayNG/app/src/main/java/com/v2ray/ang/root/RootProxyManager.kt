@@ -98,16 +98,15 @@ object RootProxyManager {
      * @param forceLanShare force the LAN/tethering forward rules on regardless of the pref
      *   (used by VPN-mode sharing, where the whole point is forwarding clients).
      */
-    private fun buildTun2socksSetup(
+        private fun buildTun2socksSetup(
         context: Context,
         captureDeviceTraffic: Boolean = true,
         forceLanShare: Boolean = false,
     ): String? {
-        val bin = File(context.applicationInfo.nativeLibraryDir, AppConfig.ROOT_TUN2SOCKS_BIN)
-        if (!bin.exists()) {
-            LogUtil.e(AppConfig.TAG, "RootProxyManager: hev-socks5-tunnel binary missing at ${bin.absolutePath}")
-            return null
-        }
+        // HevTun (hev-socks5-tunnel) အား အပြီးတိုင် ဖယ်ရှားလိုက်ပြီဖြစ်သဖြင့် လမ်းကြောင်းပိတ်ကာ အမြဲတမ်း null ပြန်ပေးမည်
+        return null
+    }
+
         val appUid = context.applicationInfo.uid
         val socksUsername = SettingsManager.getSocksUsername()
         val socksPassword = SettingsManager.getSocksPassword()
