@@ -140,7 +140,7 @@ fun SettingsScreen(
 
     val isVpn = mode == VPN
   
-    val effectiveLocalProxy = enableLocalProxy || localProxyForced
+    val effectiveLocalProxy = enableLocalProxy
     val muxXudpConcurrencyInt = muxXudpConcurrency.toIntOrNull() ?: 8
 
     val languageEntries = stringArrayResource(R.array.language_select).toList()
