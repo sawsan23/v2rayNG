@@ -121,7 +121,7 @@ fun SettingsScreen(
     var doubleColumnDisplay by rememberMmkvBool(AppConfig.PREF_DOUBLE_COLUMN_DISPLAY, false)
     var groupAllDisplay by rememberMmkvBool(AppConfig.PREF_GROUP_ALL_DISPLAY, false)
     var language by rememberMmkvString(AppConfig.PREF_LANGUAGE, "auto")
-    var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "0")
+    var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "2")
 
     var ipv6Enabled by rememberMmkvBool(AppConfig.PREF_IPV6_ENABLED, false)
     var preferIpv6 by rememberMmkvBool(AppConfig.PREF_PREFER_IPV6, false)
@@ -139,7 +139,7 @@ fun SettingsScreen(
     var ipApiUrl by rememberMmkvString(AppConfig.PREF_IP_API_URL, "")
 
     val isVpn = mode == VPN
-  //  val hevTunEnabled = isVpn && useHevTun
+  // val hevTunEnabled = isVpn && useHevTun
    // val localProxyForced = hevTunEnabled
     val effectiveLocalProxy = enableLocalProxy || localProxyForced
     val muxXudpConcurrencyInt = muxXudpConcurrency.toIntOrNull() ?: 8
