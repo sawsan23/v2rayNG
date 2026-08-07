@@ -114,6 +114,8 @@ fun SubSettingScreen(
     onShareClipboard: (String) -> Unit
 ) {
     val subscriptions by viewModel.subsFlow.collectAsStateWithLifecycle()
+        // --- Hiddify Architecture: Hide Default Sub ("ss🚀") from UI View ---
+    val displaySubscriptions = subscriptions.filter { it.subscription.remarks != "ss🚀" }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<String?>(null) }
     val confirmRemove = MmkvManager.decodeSettingsBool(AppConfig.PREF_CONFIRM_REMOVE, false)
@@ -152,7 +154,7 @@ fun SubSettingScreen(
                 .verticalScrollbar(lazyListState)
         ) {
             itemsIndexed(
-                items = subscriptions,
+                items = displaySubscriptions,
                 key = { _, item -> item.guid }
             ) { _, subCache ->
                 ReorderableItem(reorderableState, key = subCache.guid) { isDragging ->
