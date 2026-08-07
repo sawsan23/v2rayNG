@@ -274,25 +274,6 @@ fun HiddifyDashboard(
 
         Spacer(modifier = Modifier.height(64.dp))
 
-                
-                // --- Cloudflare Trace Data (IP, WARP, Colo) သို့မဟုတ် Connecting စာသားကို တိုက်ရိုက်ပြသမည် ---
-                val infoText = when {
-                    displayText == "Connecting..." -> "Connecting to fastest node..."
-                    isRunning -> cfTraceInfo // IP, WARP, Location အချက်အလက်များ
-                    else -> "Ready to connect..."
-                }
-                
-                Text(
-                    text = infoText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Left
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
         // --- Fast Connect / Auto Sort Button ---
         Button(
             onClick = onAutoTestAndSort,
@@ -308,3 +289,5 @@ fun HiddifyDashboard(
         }
     }
 }
+
+                
