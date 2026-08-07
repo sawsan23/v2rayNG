@@ -48,7 +48,7 @@ fun MainTopBar(
     val maxMenuHeight = LocalConfiguration.current.screenHeightDp.dp - statusBarHeight - navBarHeight - 20.dp
 
     AppTopBar(
-        title = stringResource(R.string.title_server),
+        title = "ss vpn",
         onBackClick = {},
         isLoading = isLoading,
         isSearchActive = showSearch,
