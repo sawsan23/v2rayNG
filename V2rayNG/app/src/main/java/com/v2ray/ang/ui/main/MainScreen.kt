@@ -1,5 +1,8 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Speed
@@ -196,8 +199,22 @@ fun HiddifyDashboard(
     delayMs: String,
     cfTraceInfo: String,
     onToggleConnection: () -> Unit,
-    onAutoTestAndSort: () -> Unit
+    onAutoTestAndSort: () -> Unit,
+    onTestCurrent: () -> Unit // <--- Parameter အသစ်
 ) {
+    // --- Advanced Battery-Friendly Auto Ping ---
+    // ဤကုဒ်သည် App ပွင့်နေချိန်တွင်သာ အလုပ်လုပ်ပြီး၊ ပိတ်လိုက်ပါက (Pause) အလိုအလျောက် ရပ်သွားသဖြင့် Battery လုံးဝမစားပါ။
+    LaunchedEffect(isRunning) {
+        if (isRunning) {
+            delay(1000) // ချိတ်ဆက်ပြီး 1 စက္ကန့်အကြာတွင် ပထမဆုံး Ping ကို စတင်ဖမ်းမည်
+            onTestCurrent()
+            
+            while (isActive) {
+                delay(2000) // ၂ စက္ကန့် (2000 ms) တိုင်း ပုံမှန် Auto Ping ထပ်စစ်မည်
+                onTestCurrent()
+            }
+        }
+    }
     // Animations for the Connect Button
     val buttonColor by animateColorAsState(
         targetValue = if (isRunning) Color(0xFF37474F) else MaterialTheme.colorScheme.surfaceVariant,
