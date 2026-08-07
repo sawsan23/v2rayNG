@@ -200,9 +200,10 @@ fun HiddifyDashboard(
 ) {
     // Animations for the Connect Button
     val buttonColor by animateColorAsState(
-        targetValue = if (isRunning) Color(0xFF00BFA5) else Color(0xFFE0E0E0),
+        targetValue = if (isRunning) Color(0xFF37474F) else MaterialTheme.colorScheme.surfaceVariant,
         animationSpec = tween(durationMillis = 500)
     )
+
     val iconColor by animateColorAsState(
         targetValue = if (isRunning) Color.White else Color.Gray,
         animationSpec = tween(durationMillis = 500)
@@ -273,21 +274,6 @@ fun HiddifyDashboard(
 
         Spacer(modifier = Modifier.height(64.dp))
 
-        // --- Info Card (Cloudflare Trace & Routing Info) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Connection Details",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 
                 // --- Cloudflare Trace Data (IP, WARP, Colo) သို့မဟုတ် Connecting စာသားကို တိုက်ရိုက်ပြသမည် ---
                 val infoText = when {
