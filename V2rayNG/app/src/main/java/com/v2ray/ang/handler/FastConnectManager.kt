@@ -1,5 +1,6 @@
 package com.v2ray.ang.handler
 
+import kotlinx.coroutines.delay
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.handler.MmkvManager.decodeAllServerList
 import com.v2ray.ang.handler.MmkvManager.decodeServerConfig
