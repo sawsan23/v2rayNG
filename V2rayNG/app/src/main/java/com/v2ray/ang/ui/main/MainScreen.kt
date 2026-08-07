@@ -1,5 +1,8 @@
 package com.v2ray.ang.ui.main
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -202,19 +205,27 @@ fun HiddifyDashboard(
     onAutoTestAndSort: () -> Unit,
     onTestCurrent: () -> Unit // <--- Parameter အသစ်
 ) {
-    // --- Advanced Battery-Friendly Auto Ping ---
-    // ဤကုဒ်သည် App ပွင့်နေချိန်တွင်သာ အလုပ်လုပ်ပြီး၊ ပိတ်လိုက်ပါက (Pause) အလိုအလျောက် ရပ်သွားသဖြင့် Battery လုံးဝမစားပါ။
-    LaunchedEffect(isRunning) {
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+
+    // --- Advanced Lifecycle-Aware Battery-Friendly Auto Ping ---
+    // ဤကုဒ်သည် App မျက်နှာပြင်ပေါ်တွင် ဖွင့်ထားချိန် (RESUMED state) တွင်သာ အလုပ်လုပ်ပါသည်။
+    // App ကို ခဏထွက်လိုက်တာနဲ့ (Pause) Loop ကြီးတစ်ခုလုံး ချက်ချင်း Cancel ဖြစ်သွားပြီး Battery လုံးဝ (၀%) မစားတော့ပါ။
+    // App ပေါ်ပြန်ဝင်လာတာနဲ့ အလိုအလျောက် အစကနေ ပြန်အလုပ်လုပ်ပါမည်။
+    LaunchedEffect(isRunning, lifecycleOwner) {
         if (isRunning) {
-            delay(1000) // ချိတ်ဆက်ပြီး 1 စက္ကန့်အကြာတွင် ပထမဆုံး Ping ကို စတင်ဖမ်းမည်
-            onTestCurrent()
-            
-            while (isActive) {
-                delay(2000) // ၂ စက္ကန့် (2000 ms) တိုင်း ပုံမှန် Auto Ping ထပ်စစ်မည်
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                delay(1000) // Screen ပေါ်ရောက်ပြီး/ချိတ်ဆက်ပြီး ၁ စက္ကန့်အကြာတွင် ပထမဆုံး Ping ဖမ်းမည်
                 onTestCurrent()
+                
+                while (isActive) {
+                    delay(2000) // ၂ စက္ကန့် (2000 ms) တိုင်း အလိုအလျောက် Update လုပ်မည်
+                    onTestCurrent()
+                }
             }
         }
     }
+
     // Animations for the Connect Button
     val buttonColor by animateColorAsState(
         targetValue = if (isRunning) Color(0xFF37474F) else MaterialTheme.colorScheme.surfaceVariant,
