@@ -61,6 +61,7 @@ fun MainBottomBar(
                 }
             }
         }
+        val showOriginalFab = false
         FloatingActionButton(
             onClick = { onAction(MainAction.ToggleService) },
             modifier = Modifier
