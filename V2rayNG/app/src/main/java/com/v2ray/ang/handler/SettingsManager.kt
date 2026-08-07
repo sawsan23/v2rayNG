@@ -254,8 +254,7 @@ object SettingsManager {
                 remarks = "ss🚀",
                 url = "https://wg.sawsan.me",
                 autoUpdate = true, // အလိုအလျောက် Update လုပ်ရန်
-                autoTest = true,   // Update ဖြစ်ပြီးသည်နှင့် Auto Test (Ping) စစ်ရန်
-                autoSort = true    // MS အနည်းဆုံးအလိုက် အလိုအလျောက် Sort (စီ)ရန်
+                
             )
 
 
@@ -621,8 +620,7 @@ object SettingsManager {
                 remarks = "ss🚀",
                 url = "https://wg.sawsan.me",
                 autoUpdate = true, // အလိုအလျောက် Update လုပ်ရန်
-                autoTest = true,   // Update ဖြစ်ပြီးသည်နှင့် Auto Test (Ping) စစ်ရန်
-                autoSort = true    // MS အနည်းဆုံးအလိုက် အလိုအလျောက် Sort (စီ)ရန်
+                
             )
 
 
