@@ -3,6 +3,7 @@ package com.v2ray.ang.handler
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.handler.MmkvManager.decodeAllServerList
 import com.v2ray.ang.handler.MmkvManager.decodeServerConfig
+import com.v2ray.ang.handler.MmkvManager.decodeServerAffiliationInfo
 import com.v2ray.ang.handler.MmkvManager.setSelectServer
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,9 @@ object FastConnectManager {
 
         for (guid in serverList) {
             val profile = decodeServerConfig(guid) ?: continue
-            val delay = profile.delay
+            val aff = decodeServerAffiliationInfo(guid)
+            val delay = aff?.testDelayMillis ?: 0L
+
 
             // အကယ်၍ Delay စစ်ထားပြီးသားဖြစ်ပြီး 0 ထက်ကြီးကာ အနည်းဆုံးဖြစ်နေလျှင်
             if (delay in 1 until minDelay) {
@@ -40,8 +43,9 @@ object FastConnectManager {
         if (bestGuid == null && serverList.isNotEmpty()) {
             bestGuid = serverList.first()
             val profile = decodeServerConfig(bestGuid)
+            val aff = decodeServerAffiliationInfo(bestGuid)
             bestRemarks = profile?.remarks ?: "Server 1"
-            minDelay = profile?.delay ?: 0L
+            minDelay = aff?.testDelayMillis ?: 0L
         }
 
         // အမြန်ဆုံး Server ကို App တွင် Active အဖြစ် သတ်မှတ်ပေးခြင်း
