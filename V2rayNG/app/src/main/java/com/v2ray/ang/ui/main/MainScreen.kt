@@ -208,10 +208,17 @@ fun HiddifyDashboard(
         targetValue = if (isRunning) Color.White else Color.Gray,
         animationSpec = tween(durationMillis = 500)
     )
-    val scale by animateFloatAsState(
+
+        val scale by animateFloatAsState(
         targetValue = if (isRunning) 1.05f else 1f,
         animationSpec = tween(durationMillis = 300)
     )
+
+    // --- Extract Real-time Ping from displayText ---
+    val realPing = remember(displayText, delayMs) {
+        val match = Regex("(\\d+)\\s*ms").find(displayText)
+        match?.value ?: delayMs
+    }
 
     Column(
         modifier = modifier.padding(24.dp),
@@ -233,7 +240,7 @@ fun HiddifyDashboard(
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- Delay (Ping) Indicator ---
-        if (isRunning || delayMs != "0 ms") {
+        if (isRunning) { // (Disconnected ချိန်တွင် လုံးဝ ဖျောက်ထားရန် Condition ပြင်ဆင်ထားသည်)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Speed,
@@ -243,7 +250,7 @@ fun HiddifyDashboard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = delayMs,
+                    text = realPing, // <--- delayMs အစား အမှန်ကန်ဆုံး realPing ကို ပြောင်းသုံးထားသည်
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
