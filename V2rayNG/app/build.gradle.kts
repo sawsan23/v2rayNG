@@ -154,6 +154,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.coil.compose)
+    implementation("androidx.compose.material:material-icons-extended")
+
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
