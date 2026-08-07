@@ -124,9 +124,11 @@ class MainViewModel(
             }
 
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
-            is MainServiceEvent.MeasureDelaySuccess -> {
-                _uiState.update { it.copy(statusText = event.content) }
-            }
+           is MainServiceEvent.MeasureDelaySuccess -> {
+            _uiState.update { it.copy(statusText = event.content) }
+            updateDashboardDelay()
+        }
+
 
             MainServiceEvent.MeasureConfigSuccess -> {
                 viewModelScope.launch(ioDispatcher) {
@@ -795,17 +797,19 @@ class MainViewModel(
         _cfTraceInfo.value = info
     }
 
-    private fun updateDashboardDelay() {
+     private fun updateDashboardDelay() {
         val selected = uiState.value.selectedGuid ?: return
-        viewModelScope.launch(defaultDispatcher) {
-            val server = currentServers().find { it.guid == selected }
-            if (server != null && server.testDelayMillis > 0) {
-                _delayMs.value = "${server.testDelayMillis} ms"
+        viewModelScope.launch(ioDispatcher) {
+            val affiliation = dataSource.decodeAffiliationInfo(selected)
+            val delay = affiliation?.testDelayMillis ?: 0L
+            if (delay > 0) {
+                _delayMs.value = "$delay ms"
             } else {
                 _delayMs.value = "0 ms"
             }
         }
     }
+
 
     fun startDashboardAutoSetup() {
         viewModelScope.launch(defaultDispatcher) {
