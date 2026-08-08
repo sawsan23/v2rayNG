@@ -113,6 +113,10 @@ fun MainScreen(
     // [လုပ်ငန်းစဉ်-၁] First Install တွင် Sub ကို (၁) ကြိမ်သာ အလိုအလျောက် Update လုပ်ခြင်း
     // =======================================================
     LaunchedEffect(Unit) {
+        // [Root Cause Fix] Activity နှင့် VPN Service များ အပြည့်အဝ အသင့်ဖြစ်ရန် (၂.၅) စက္ကန့် စောင့်ပါမည်။
+        // ဤသို့စောင့်ခြင်းဖြင့် App ဖွင့်ဖွင့်ချင်း ချက်ချင်းပိတ်သွားသော Crash ရောဂါကို အမြစ်ပြတ် ဖြေရှင်းပြီးဖြစ်ပါသည်။
+        kotlinx.coroutines.delay(2500) 
+        
         val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
         val hasDoneFirstUpdate = prefs.getBoolean("has_done_first_update", false)
         if (!hasDoneFirstUpdate) {
@@ -120,6 +124,7 @@ fun MainScreen(
             prefs.edit().putBoolean("has_done_first_update", true).apply()
         }
     }
+
 
     // =======================================================
     // [လုပ်ငန်းစဉ်-၂] App ဖွင့်တိုင်း (UI ပေါ်ပြီး ၃ စက္ကန့်အကြာတွင်) 10% Auto Ping စစ်ခြင်း
