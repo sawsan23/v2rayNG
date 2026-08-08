@@ -101,52 +101,38 @@ fun MainScreen(
         // --- ဤနေရာတွင် မူလကုဒ်များ ရှိပါသည် ---
     val servers by serverFlow.collectAsStateWithLifecycle()
 
-    // --- အသစ်ထည့်ရမည့် Auto Select & First Install Logic ---
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val isTesting = uiState.isTesting
-    var pendingAutoSelect by remember { mutableStateOf(false) } // Manual ခလုတ်အတွက်
-    var pendingSmartSelectResult by remember { mutableStateOf(false) } // Smart Pre-select အတွက်
+    // ဤ State သည် Manual နှိပ်သည်ဖြစ်စေ၊ Auto လုပ်သည်ဖြစ်စေ Ping အပြီးတွင် အကောင်းဆုံး Key ကို ရွေးပေးရန်အတွက် ဖြစ်ပါသည်
+    var pendingAutoSelect by remember { mutableStateOf(false) } 
     var hasRunStartupLogic by remember { mutableStateOf(false) }
 
-    // (၁) First Install Update နှင့် (၂) App ဖွင့်ချိန် Smart Pre-select
+    // [စည်းမျဉ်း-၁]: App စဖွင့်ချိန် (Not Connected) တွင် User ကို မမေးဘဲ 10% Auto စစ်မည် (Round-Robin Random ဖြင့်)
     LaunchedEffect(servers.isNotEmpty(), isRunning) {
         if (servers.isNotEmpty() && !isRunning && !hasRunStartupLogic) {
             hasRunStartupLogic = true
             
-            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             val hasDoneFirstUpdate = prefs.getBoolean("has_done_first_update", false)
             
             if (!hasDoneFirstUpdate) {
-                // First Install ဖြစ်လျှင် တစ်ကြိမ်သာ Update လုပ်မည်
+                // First Install ဆိုလျှင် တစ်ကြိမ်သာ Sub ကို Update လုပ်ပါမည်
                 onAction(MainAction.UpdateSubscriptions)
                 prefs.edit().putBoolean("has_done_first_update", true).apply()
             } else {
-                // First Install မဟုတ်လျှင် Background မှ ၁၀% ကိုသာ Ping စစ်ပြီး အကောင်းဆုံးကို Pre-select လုပ်မည်
-                pendingSmartSelectResult = true
-                mainViewModel.smartPreSelectPing()
+                // First Install မဟုတ်လျှင် App ဖွင့်တာနဲ့ 10% ကို Auto စစ်ပါမည်
+                pendingAutoSelect = true 
+                mainViewModel.smartPing(10) // <-- 10%
             }
         }
     }
 
-    // Smart Pre-select ပြီးဆုံးချိန်တွင် အကောင်းဆုံး Key အား ရွေးချယ်ပေးမည့် Observer
-    LaunchedEffect(isTesting) {
-        if (!isTesting && pendingSmartSelectResult) {
-            pendingSmartSelectResult = false
-            delay(1000)
-            // Ping (MS) > 0 ဖြစ်သော (စစ်ဆေးပြီးသော ၁၀% ထဲမှ) အနည်းဆုံး Key ကို ရှာဖွေခြင်း
-            val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
-            if (bestServer != null && bestServer.guid != uiState.selectedGuid) {
-                onAction(MainAction.SelectServer(bestServer.guid))
-            }
-            // ဤနေရာတွင် User View နှောင့်ယှက်မှုမဖြစ်စေရန် (Background ဖြစ်၍) Sort မလုပ်ပါ
-        }
-    }
-    
-    // Manual 'Auto Fast Connect' ခလုတ် နှိပ်ချိန်တွင် အလုပ်လုပ်မည့် Observer (ယခင်အတိုင်း)
+    // Ping Test ပြီးဆုံးသွားချိန် အကောင်းဆုံး (Latency အနည်းဆုံး) Key အား Auto ချိတ်ပေးမည့် Universal စနစ်
     LaunchedEffect(isTesting) {
         if (!isTesting && pendingAutoSelect) {
             pendingAutoSelect = false
-            delay(1000)
+            kotlinx.coroutines.delay(1000) // Ping Result များ UI သို့ ရောက်လာရန် ၁ စက္ကန့် စောင့်ပါမည်
+            
             val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
             if (bestServer != null) {
                 if (bestServer.guid != uiState.selectedGuid) {
@@ -157,42 +143,19 @@ fun MainScreen(
         }
     }
 
-    // (၁၅ မိနစ်တစ်ခါ Auto Ping လုပ်မည့် မူလ Loop - ပြင်စရာမလိုပါ)
+    // [စည်းမျဉ်း-၃]: တစ်နေ့ ၈ ကြိမ် (၃ နာရီတစ်ခါ) Background မှ Key အားလုံး (100%) ကို Auto စစ်မည်
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (isActive) {
-                delay(180 * 60 * 1000L) 
+                kotlinx.coroutines.delay(3 * 60 * 60 * 1000L) // ၃ နာရီ (10,800,000 ms) တိတိ စောင့်ပါမည်
                 if (!isTesting) { 
                     pendingAutoSelect = true
-                    onAction(MainAction.TestRealAllServers)
+                    onAction(MainAction.TestRealAllServers) // <-- 100% (All Servers)
                 }
             }
         }
     }
-    // --- အသစ်ထည့်ရမည့် Code အဆုံး ---
 
-
-    // Ping Test ပြီးဆုံးသွားချိန်တွင် အကောင်းဆုံး Server ကို ရှာဖွေ၍ Auto Select ပြုလုပ်ပေးမည့် Observer
-    LaunchedEffect(isTesting) {
-        if (!isTesting && pendingAutoSelect) {
-            pendingAutoSelect = false
-            
-            // ViewModel မှ Ping အသစ်များ UI သို့ ရောက်လာရန် ခဏစောင့်ပါမည်
-            delay(1000)
-            
-            // Ping (MS) သုညထက်ကြီးပြီး အနည်းဆုံးဖြစ်သော Server (အကောင်းဆုံး Key) ကို ရှာဖွေခြင်း
-            val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
-            
-            if (bestServer != null) {
-                // အကယ်၍ အကောင်းဆုံး Server သည် လက်ရှိချိတ်ထားသော Server မဟုတ်ခဲ့လျှင် ၎င်းဆီသို့ ပြောင်းချိတ်ပါမည်
-                if (bestServer.guid != uiState.selectedGuid) {
-                    onAction(MainAction.SelectServer(bestServer.guid))
-                }
-                // နောက်ဆုံးအနေဖြင့် အကောင်းဆုံး Server အပေါ်ဆုံးသို့ ရောက်သွားစေရန် List ကို Sort လုပ်ပါမည်
-                onAction(MainAction.SortByTestResults)
-            }
-        }
-    }
 
     
     val isDarkTheme = LocalDarkTheme.current
