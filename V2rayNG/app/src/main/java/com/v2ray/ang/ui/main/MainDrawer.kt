@@ -46,20 +46,21 @@ enum class MainDestination(@DrawableRes val iconRes: Int, @StringRes val labelRe
 }
 
 private val primaryDrawerItems = listOf(
-    MainDestination.Subscriptions,
+    MainDestination.Subscriptions, 
     MainDestination.PerAppProxy,
-    MainDestination.Routing,
-    MainDestination.UserAssets,
+//  MainDestination.Routing,
+//  MainDestination.UserAssets,
     MainDestination.Settings
 )
 
 private val drawerItems = primaryDrawerItems + listOf(
-    MainDestination.Promotion,
-    MainDestination.Logcat,
-    MainDestination.CheckUpdate,
-    MainDestination.BackupRestore,
-    MainDestination.About
+//  MainDestination.Promotion,
+//  MainDestination.Logcat,
+//  MainDestination.CheckUpdate,
+//  MainDestination.BackupRestore,
+//  MainDestination.About
 )
+
 
 @Composable
 fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) -> Unit) {
@@ -73,7 +74,7 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
         Column(
             modifier = Modifier.verticalScroll(drawerScrollState).verticalScrollbar(drawerScrollState)
         ) {
-            Surface(
+                        Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
@@ -85,26 +86,24 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
+                    // --- App Icon ထည့်သွင်းခြင်း (ic_launcher) ---
+                    androidx.compose.foundation.Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher),
+                        contentDescription = "App Icon",
+                        modifier = Modifier
+                            .size(64.dp) // ညီအစ်ကို လိုချင်သည့် App Icon Size (Standard 64.dp)
+                            .padding(bottom = 8.dp)
+                    )
+
+                    // --- SS (App Name) အား Bold ပြောင်းခြင်း ---
                     Text(
                         text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.headlineLarge.copy(
-                            fontFamily = FontFamily(Font(R.font.montserrat_thin)),
-                            fontWeight = FontWeight.Thin
+                            fontFamily = FontFamily.Default, // မူလ Thin Font အစား Default သို့ ပြောင်းပါသည်
+                            fontWeight = FontWeight.Bold // Bold အထူ ပြောင်းထားပါသည်
                         ),
+                        color = MaterialTheme.colorScheme.primary, // အရောင်ပိုထင်းစေရန်
                         textAlign = TextAlign.Center
                     )
                 }
             }
-            drawerItems.forEachIndexed { index, item ->
-                if (index == primaryDrawerItems.size) AppDivider()
-                NavigationDrawerItem(
-                    label = { Text(stringResource(item.labelRes)) },
-                    selected = false,
-                    onClick = { onNavigate(item) },
-                    icon = { Icon(painterResource(item.iconRes), contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-            }
-        }
-    }
-}
