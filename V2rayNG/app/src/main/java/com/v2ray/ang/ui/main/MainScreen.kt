@@ -99,7 +99,8 @@ fun MainScreen(
         mainViewModel.serversForGroup(uiState.selectedGroupId)
     }
         // --- ဤနေရာတွင် မူလကုဒ်များ ရှိပါသည် ---
-    val servers by serverFlow.collectAsStateWithLifecycle()
+        // မူလ: val servers by serverFlow.collectAsStateWithLifecycle()
+    val servers by serverFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
         val context = androidx.compose.ui.platform.LocalContext.current
     val isTesting = uiState.isTesting
@@ -141,11 +142,9 @@ fun MainScreen(
     // =======================================================
     // [လုပ်ငန်းစဉ်-၃] Ping Test ပြီးဆုံးချိန် အကောင်းဆုံး Key အား Auto ချိတ်ပေးမည့် စနစ်
     // =======================================================
-    LaunchedEffect(isTesting) {
+        LaunchedEffect(isTesting) {
         if (!isTesting && pendingAutoSelect) {
-            pendingAutoSelect = false
             kotlinx.coroutines.delay(1000) 
-            
             val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
             if (bestServer != null) {
                 if (bestServer.guid != uiState.selectedGuid) {
@@ -153,6 +152,8 @@ fun MainScreen(
                 }
                 onAction(MainAction.SortByTestResults)
             }
+            // လုပ်ငန်းစဉ်အားလုံး ပြီးဆုံးမှသာ false သို့ ပြောင်းပါမည် (Race Condition ကာကွယ်ရန်)
+            pendingAutoSelect = false
         }
     }
 
@@ -323,16 +324,18 @@ fun HiddifyDashboard(
     // Lifecycle-Aware Polling (3s -> 60s Cycle)
     LaunchedEffect(isRunning, lifecycleOwner) {
         if (isRunning) {
-            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                delay(1000)
-                onTestCurrent()
-                while (isActive) {
-                    delay(3000)
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                    delay(1000)
                     onTestCurrent()
-                    delay(60000)
-                    onTestCurrent()
+                    // မူလ: while (isActive) {
+                    while (true) {
+                        delay(3000)
+                        onTestCurrent()
+                        delay(60000)
+                        onTestCurrent()
+                    }
                 }
-            }
+
         }
     }
 
@@ -536,7 +539,7 @@ fun HiddifyDashboard(
                                 .fillMaxWidth()
                                 .heightIn(max = 240.dp)
                         ) {
-                            items(items = servers, key = { it.guid }) { serverItem ->
+                            // items(items = servers, key = { it.guid }) { serverItem ->
                                 val isSelected = serverItem.guid == selectedGuid
                                 Row(
                                     modifier = Modifier
