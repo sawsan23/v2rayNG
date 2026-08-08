@@ -519,7 +519,7 @@ fun HiddifyDashboard(
                     )
                 }
 
-                        // Expandable Proxy List
+                                // Expandable Proxy List
         AnimatedVisibility(
             visible = isExpanded,
             enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
@@ -594,3 +594,7 @@ fun HiddifyDashboard(
                 }
             }
         }
+    } // End Column (inside Card)
+    } // End Card
+    } // End Main Column
+} // End fun HiddifyDashboard (ဖိုင်၏ အဆုံးသတ်)
