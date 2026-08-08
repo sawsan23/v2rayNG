@@ -22,12 +22,20 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: 'stable'
+        # Go Library များကိုပါ Cache လုပ်ထားရန်
+        cache-dependency-path: 'AndroidLibXrayLite/go.sum' 
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
+
+    # =======================================================
+    # [အသစ်ဖြည့်စွက်ချက်] Gradle Cache စနစ် (Library များကို အလကား သိမ်းပေးထားမည်ဖြစ်၍ ဒုတိယအကြိမ်မှစပြီး အလွန်မြန်သွားပါမည်)
+    # =======================================================
+    - name: Setup Gradle Cache
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Build VPN Core and Copy
       run: |
@@ -59,6 +67,8 @@ jobs:
         
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
+        # မှတ်ချက် - အကယ်၍ F-Droid အတွက် သီးသန့်ထုတ်ချင်ပါက အပေါ်စာကြောင်းအစား အောက်ပါစာကြောင်းကို သုံးပါ
+        # ./gradlew assembleFdroidDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
