@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import androidx.compose.foundation.layout.size
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -107,3 +108,17 @@ fun MainDrawerContent(drawerState: DrawerState, onNavigate: (MainDestination) ->
                     )
                 }
             }
+
+                        drawerItems.forEachIndexed { index, item ->
+                if (index == primaryDrawerItems.size) AppDivider()
+                NavigationDrawerItem(
+                    label = { Text(stringResource(item.labelRes)) },
+                    selected = false,
+                    onClick = { onNavigate(item) },
+                    icon = { Icon(painterResource(item.iconRes), contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+            }
+        }
+    }
+}
