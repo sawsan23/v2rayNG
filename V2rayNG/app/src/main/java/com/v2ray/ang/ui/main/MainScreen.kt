@@ -220,12 +220,12 @@ fun MainScreen(
                 )
             },
             bottomBar = {
-                MainBottomBar(
-                    displayText = displayText,
-                    isRunning = isRunning,
-                    isDarkTheme = isDarkTheme,
-                    onAction = onAction
-                )
+               // MainBottomBar(
+                  // displayText = displayText,
+                  //  isRunning = isRunning,
+                //    isDarkTheme = isDarkTheme,
+                 //   onAction = onAction
+              //  )
             }
                 
         ) { innerPadding ->
@@ -311,10 +311,17 @@ fun HiddifyDashboard(
         animationSpec = tween(durationMillis = 300)
     )
 
-    val realPing = remember(displayText, delayMs) {
-        val match = Regex("(\\d+)\\s*ms").find(displayText)
+     val realPing = remember(displayText, delayMs) {
+     val match = Regex("(\\d+)\\s*ms").find(displayText)
         match?.value ?: delayMs
     }
+
+    // --- အသစ်ထည့်ရမည့် Code စတင် ---
+    // VPN ချိတ်ထားလျှင် အပေါ်က realPing ကိုသုံးမည်၊ မချိတ်ထားလျှင် Server ရဲ့ မူလ Ping ကိုပြမည်
+    val displayPingForCard = if (isRunning) realPing else currentSelectedServer?.testDelayString ?: ""
+    val pingColor = if (displayPingForCard.contains("-") || displayPingForCard.isBlank()) colorPingRed else colorPing
+    // --- အသစ်ထည့်ရမည့် Code အဆုံး ---
+
 
     val currentSelectedServer = remember(servers, selectedGuid) {
         servers.find { it.guid == selectedGuid } ?: servers.firstOrNull()
@@ -449,16 +456,18 @@ fun HiddifyDashboard(
                         }
                     }
                     
+                                        // --- အစားထိုးရမည့် အပိုင်း ---
                     // Ping ms of Selected Server
-                    if (currentSelectedServer?.testDelayString?.isNotBlank() == true) {
+                    if (displayPingForCard.isNotBlank()) {
                         Text(
-                            text = currentSelectedServer.testDelayString,
+                            text = displayPingForCard,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (currentSelectedServer.testDelayMillis < 0L) colorPingRed else colorPing,
+                            color = pingColor,
                             modifier = Modifier.padding(end = 8.dp)
                         )
                     }
+
 
                     // Dropdown Arrow
                     Icon(
