@@ -1,5 +1,7 @@
 package com.v2ray.ang.ui.main
 
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -96,16 +98,70 @@ fun MainScreen(
     val serverFlow = remember(uiState.selectedGroupId) {
         mainViewModel.serversForGroup(uiState.selectedGroupId)
     }
+        // --- ဤနေရာတွင် မူလကုဒ်များ ရှိပါသည် ---
     val servers by serverFlow.collectAsStateWithLifecycle()
-    // --- Auto Select & 15-Min Loop States ---
-    val isTesting = uiState.isTesting
-    var pendingAutoSelect by remember { mutableStateOf(false) }
 
-    // (၁၅) မိနစ် တစ်ကြိမ် အလိုအလျောက် Ping စစ်ပြီး အကောင်းဆုံး Server သို့ ပြောင်းချိတ်မည့် နောက်ကွယ်က Loop
+    // --- အသစ်ထည့်ရမည့် Auto Select & First Install Logic ---
+    val context = LocalContext.current
+    val isTesting = uiState.isTesting
+    var pendingAutoSelect by remember { mutableStateOf(false) } // Manual ခလုတ်အတွက်
+    var pendingSmartSelectResult by remember { mutableStateOf(false) } // Smart Pre-select အတွက်
+    var hasRunStartupLogic by remember { mutableStateOf(false) }
+
+    // (၁) First Install Update နှင့် (၂) App ဖွင့်ချိန် Smart Pre-select
+    LaunchedEffect(servers.isNotEmpty(), isRunning) {
+        if (servers.isNotEmpty() && !isRunning && !hasRunStartupLogic) {
+            hasRunStartupLogic = true
+            
+            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val hasDoneFirstUpdate = prefs.getBoolean("has_done_first_update", false)
+            
+            if (!hasDoneFirstUpdate) {
+                // First Install ဖြစ်လျှင် တစ်ကြိမ်သာ Update လုပ်မည်
+                onAction(MainAction.UpdateSubscriptions)
+                prefs.edit().putBoolean("has_done_first_update", true).apply()
+            } else {
+                // First Install မဟုတ်လျှင် Background မှ ၁၀% ကိုသာ Ping စစ်ပြီး အကောင်းဆုံးကို Pre-select လုပ်မည်
+                pendingSmartSelectResult = true
+                mainViewModel.smartPreSelectPing()
+            }
+        }
+    }
+
+    // Smart Pre-select ပြီးဆုံးချိန်တွင် အကောင်းဆုံး Key အား ရွေးချယ်ပေးမည့် Observer
+    LaunchedEffect(isTesting) {
+        if (!isTesting && pendingSmartSelectResult) {
+            pendingSmartSelectResult = false
+            delay(1000)
+            // Ping (MS) > 0 ဖြစ်သော (စစ်ဆေးပြီးသော ၁၀% ထဲမှ) အနည်းဆုံး Key ကို ရှာဖွေခြင်း
+            val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
+            if (bestServer != null && bestServer.guid != uiState.selectedGuid) {
+                onAction(MainAction.SelectServer(bestServer.guid))
+            }
+            // ဤနေရာတွင် User View နှောင့်ယှက်မှုမဖြစ်စေရန် (Background ဖြစ်၍) Sort မလုပ်ပါ
+        }
+    }
+    
+    // Manual 'Auto Fast Connect' ခလုတ် နှိပ်ချိန်တွင် အလုပ်လုပ်မည့် Observer (ယခင်အတိုင်း)
+    LaunchedEffect(isTesting) {
+        if (!isTesting && pendingAutoSelect) {
+            pendingAutoSelect = false
+            delay(1000)
+            val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
+            if (bestServer != null) {
+                if (bestServer.guid != uiState.selectedGuid) {
+                    onAction(MainAction.SelectServer(bestServer.guid))
+                }
+                onAction(MainAction.SortByTestResults)
+            }
+        }
+    }
+
+    // (၁၅ မိနစ်တစ်ခါ Auto Ping လုပ်မည့် မူလ Loop - ပြင်စရာမလိုပါ)
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (isActive) {
-                delay(15 * 60 * 1000L) // ၁၅ မိနစ် (900,000 ms) စောင့်ပါမည်
+                delay(180 * 60 * 1000L) 
                 if (!isTesting) { 
                     pendingAutoSelect = true
                     onAction(MainAction.TestRealAllServers)
@@ -113,6 +169,8 @@ fun MainScreen(
             }
         }
     }
+    // --- အသစ်ထည့်ရမည့် Code အဆုံး ---
+
 
     // Ping Test ပြီးဆုံးသွားချိန်တွင် အကောင်းဆုံး Server ကို ရှာဖွေ၍ Auto Select ပြုလုပ်ပေးမည့် Observer
     LaunchedEffect(isTesting) {
