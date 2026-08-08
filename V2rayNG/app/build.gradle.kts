@@ -38,6 +38,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
+    // Build မြန်စေရန်နှင့် GitHub Actions တွင် အချိန်/Memory ကုန်သက်သာစေရန် Lint ကို ပိတ်ထားပါမည်
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+        checkDependencies = false
+    }
+
+
     buildTypes {
         release {
             isMinifyEnabled = false
