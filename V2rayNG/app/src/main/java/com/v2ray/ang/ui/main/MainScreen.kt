@@ -208,7 +208,7 @@ fun HiddifyDashboard(
     onTestCurrent: () -> Unit // <--- Parameter အသစ်
 ) {
 
-        val lifecycleOwner = LocalLifecycleOwner.current
+     val lifecycleOwner = LocalLifecycleOwner.current
 
     // --- Advanced Lifecycle-Aware Battery-Friendly Auto Ping ---
     // ဤကုဒ်သည် App မျက်နှာပြင်ပေါ်တွင် ဖွင့်ထားချိန် (RESUMED state) တွင်သာ အလုပ်လုပ်ပါသည်။
@@ -221,12 +221,16 @@ fun HiddifyDashboard(
                 onTestCurrent()
                 
                 while (isActive) {
-                    delay(2000) // ၂ စက္ကန့် (2000 ms) တိုင်း အလိုအလျောက် Update လုပ်မည်
+                    delay(3000) // ၃ စက္ကန့် စောင့်ပြီး ဒုတိယအကြိမ် Ping စစ်မည်
                     onTestCurrent()
+
+                    delay(60000) // ထို့နောက် ၁ မိနစ် (60,000 ms) နားမည်
+                    onTestCurrent() // ၁ မိနစ် ပြည့်ပါက နောက်တစ်ကြိမ် Ping စစ်မည် (ထို့နောက် ၃ စက္ကန့်စောင့်မည့် loop သို့ ပြန်သွားမည်)
                 }
             }
         }
     }
+
 
     // Animations for the Connect Button
     val buttonColor by animateColorAsState(
