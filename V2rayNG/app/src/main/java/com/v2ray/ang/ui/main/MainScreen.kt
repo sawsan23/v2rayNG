@@ -161,7 +161,8 @@ fun MainScreen(
     // =======================================================
     LaunchedEffect(isRunning) {
         if (isRunning) {
-            while (kotlinx.coroutines.isActive) {
+            // Unresolved reference Error မတက်စေရန် while (true) ဖြင့်သာ အသုံးပြုပါမည်
+            while (true) {
                 kotlinx.coroutines.delay(3 * 60 * 60 * 1000L) 
                 if (!isTesting) { 
                     pendingAutoSelect = true
@@ -170,6 +171,7 @@ fun MainScreen(
             }
         }
     }
+
 
 
 
