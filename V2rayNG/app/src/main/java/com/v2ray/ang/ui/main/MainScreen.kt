@@ -188,7 +188,7 @@ fun MainScreen(
                         kotlinx.coroutines.delay(3000)
                         onAction(MainAction.SortByTestResults)
                     }
-                }
+                },
             )
         }
     }
