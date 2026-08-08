@@ -820,54 +820,57 @@ class MainViewModel(
     // --------------------------------------
 
 
-        // --- Smart Ping (10% သို့မဟုတ် 50% Random + Target Ports (2408, 500, 1701) မျှတစွာပါဝင်စေရန်) ---
-    fun smartPing(percentage: Int) {
+            // --- Smart Ping (10% သို့ 50% Random + Target Ports + Thread Safe) ---
+    fun smartPing(percentage: Int, servers: List<ServersCache>) {
         val groupId = uiState.value.selectedGroupId
-        val servers = currentServers()
         if (servers.isEmpty()) return
         
-        // သတ်မှတ်ထားသော ရာခိုင်နှုန်းအတိုင်း Quota တွက်ချက်ခြင်း
-        val quota = (servers.size * percentage / 100).coerceAtLeast(1)
-        val selectedGuids = mutableSetOf<String>()
-        
-        // (၁) Port ၃ မျိုးကို အုပ်စုခွဲပြီး App ပိတ်/ဖွင့်တိုင်း မတူညီစေရန် Shuffled ဖြင့် Random မွှေနှောက်ခြင်း
-        val g2408 = servers.filter { it.profile.serverPort.toString() == "2408" }.shuffled().toMutableList()
-        val g500 = servers.filter { it.profile.serverPort.toString() == "500" }.shuffled().toMutableList()
-        val g1701 = servers.filter { it.profile.serverPort.toString() == "1701" }.shuffled().toMutableList()
-        val others = servers.filter { it.profile.serverPort.toString() !in listOf("2408", "500", "1701") }.shuffled().toMutableList()
-
-        val targetGroups = listOf(g2408, g500, g1701)
-        var turn = 0
-        
-        // (၂) Round-Robin Algorithm - Port ၃ မျိုးစလုံးမှ တစ်လှည့်စီ မျှတစွာ ဆွဲထုတ်ခြင်း
-        while (selectedGuids.size < quota && targetGroups.any { it.isNotEmpty() }) {
-            val group = targetGroups[turn % 3]
-            if (group.isNotEmpty()) {
-                selectedGuids.add(group.removeAt(0).guid)
-            }
-            turn++
-        }
-        
-        // (၃) Port ၃ မျိုးလုံး ကုန်သွားသော်လည်း Quota မပြည့်သေးပါက ကျန်သော Key များထဲမှ Random ဖြည့်ခြင်း
-        while (selectedGuids.size < quota && others.isNotEmpty()) {
-            selectedGuids.add(others.removeAt(0).guid)
-        }
-        
-        dataSource.clearAllTestDelayResults(servers.map { it.guid })
-        testingGroupId = groupId
+        // UI ကို အရင်ဆုံး Update လုပ်ပေးပါမည်
         _uiState.update { it.copy(isTesting = true, statusText = "Testing $percentage% Servers...") }
         
-        // Background တွင် Ping တိုင်းတာခြင်း
+        // Database Operations နှင့် Filtering အားလုံးကို Background Thread ပေါ်သို့ ရွှေ့ပါမည် (Crash မဖြစ်စေရန်)
         viewModelScope.launch(ioDispatcher) {
-            cacheMutex.withLock { groupDataCache.remove(groupId) }
-            dataSource.sendMsg2TestService(
-                TestServiceMessage(
-                    key = AppConfig.MSG_MEASURE_CONFIG_START,
-                    subscriptionId = groupId,
-                    serverGuids = selectedGuids.toList(),
-                    onlyTcp = false
+            try {
+                val quota = (servers.size * percentage / 100).coerceAtLeast(1)
+                val selectedGuids = mutableSetOf<String>()
+                
+                val g2408 = servers.filter { it.profile.serverPort.toString() == "2408" }.shuffled().toMutableList()
+                val g500 = servers.filter { it.profile.serverPort.toString() == "500" }.shuffled().toMutableList()
+                val g1701 = servers.filter { it.profile.serverPort.toString() == "1701" }.shuffled().toMutableList()
+                val others = servers.filter { it.profile.serverPort.toString() !in listOf("2408", "500", "1701") }.shuffled().toMutableList()
+
+                val targetGroups = listOf(g2408, g500, g1701)
+                var turn = 0
+                
+                while (selectedGuids.size < quota && targetGroups.any { it.isNotEmpty() }) {
+                    val group = targetGroups[turn % 3]
+                    if (group.isNotEmpty()) {
+                        selectedGuids.add(group.removeAt(0).guid)
+                    }
+                    turn++
+                }
+                
+                while (selectedGuids.size < quota && others.isNotEmpty()) {
+                    selectedGuids.add(others.removeAt(0).guid)
+                }
+                
+                // ယခုမှသာ DB ကို Background မှ ရှင်းပါမည်
+                dataSource.clearAllTestDelayResults(servers.map { it.guid })
+                
+                cacheMutex.withLock { groupDataCache.remove(groupId) }
+                dataSource.sendMsg2TestService(
+                    TestServiceMessage(
+                        key = AppConfig.MSG_MEASURE_CONFIG_START,
+                        subscriptionId = groupId,
+                        serverGuids = selectedGuids.toList(),
+                        onlyTcp = false
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // အကယ်၍ ပြဿနာတစ်ခုခုရှိပါက UI အား ပုံမှန်အခြေအနေသို့ ပြန်လည်ရောက်ရှိစေရန်
+                _uiState.update { it.copy(isTesting = false) }
+            }
         }
     }
 
