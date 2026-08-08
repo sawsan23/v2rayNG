@@ -1,38 +1,43 @@
 package com.v2ray.ang.ui.main
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Speed
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
@@ -41,6 +46,7 @@ import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,16 +55,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.ui.compose.LocalDarkTheme
 import com.v2ray.ang.ui.compose.QRCodeDialog
+import com.v2ray.ang.ui.compose.colorConfigType
+import com.v2ray.ang.ui.compose.colorPing
+import com.v2ray.ang.ui.compose.colorPingRed
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
@@ -73,16 +89,19 @@ fun MainScreen(
     val displayText = uiState.statusText
     val shareQRCodeBitmap = uiState.shareQRCodeBitmap
 
-    // --- Hiddify Architecture: Collect real-time delay & CF Trace from ViewModel ---
     val delayMs by mainViewModel.delayMs.collectAsStateWithLifecycle()
     val cfTraceInfo by mainViewModel.cfTraceInfo.collectAsStateWithLifecycle()
-    // -----------------------------------------------------------------------------
+
+    // Collect Servers for current Group
+    val serverFlow = remember(uiState.selectedGroupId) {
+        mainViewModel.serversForGroup(uiState.selectedGroupId)
+    }
+    val servers by serverFlow.collectAsStateWithLifecycle()
 
     val isDarkTheme = LocalDarkTheme.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     
-    // UI State for Dialogs
     var showDelAllConfirm by remember { mutableStateOf(false) }
     var showDelDuplicateConfirm by remember { mutableStateOf(false) }
     var showDelInvalidConfirm by remember { mutableStateOf(false) }
@@ -170,15 +189,16 @@ fun MainScreen(
                 )
             }
         ) { innerPadding ->
-                        // --- HIDDIFY STYLE DASHBOARD UI ---
             HiddifyDashboard(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
                 isRunning = isRunning,
                 displayText = displayText,
-                delayMs = delayMs, // ViewModel မှ အမှန်တကယ်ရလာသော Ping (ms)
-                cfTraceInfo = cfTraceInfo, // ViewModel မှ အမှန်တကယ်ရလာသော CF Trace (IP, WARP)
+                delayMs = delayMs,
+                cfTraceInfo = cfTraceInfo,
+                servers = servers,
+                selectedGuid = uiState.selectedGuid,
                 onToggleConnection = { onAction(MainAction.ToggleService) },
                 onAutoTestAndSort = {
                     onAction(MainAction.UpdateSubscriptions)
@@ -189,12 +209,12 @@ fun MainScreen(
                         onAction(MainAction.SortByTestResults)
                     }
                 },
-                onTestCurrent = { onAction(MainAction.TestCurrentServer) } 
+                onTestCurrent = { onAction(MainAction.TestCurrentServer) },
+                onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) }
             )
         }
     }
 }
-
 
 @Composable
 fun HiddifyDashboard(
@@ -203,36 +223,36 @@ fun HiddifyDashboard(
     displayText: String,
     delayMs: String,
     cfTraceInfo: String,
+    servers: List<ServersCache>,
+    selectedGuid: String?,
     onToggleConnection: () -> Unit,
     onAutoTestAndSort: () -> Unit,
-    onTestCurrent: () -> Unit // <--- Parameter အသစ်
+    onTestCurrent: () -> Unit,
+    onSelectServer: (String) -> Unit
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isExpanded by remember { mutableStateOf(false) }
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 250)
+    )
 
-     val lifecycleOwner = LocalLifecycleOwner.current
-
-    // --- Advanced Lifecycle-Aware Battery-Friendly Auto Ping ---
-    // ဤကုဒ်သည် App မျက်နှာပြင်ပေါ်တွင် ဖွင့်ထားချိန် (RESUMED state) တွင်သာ အလုပ်လုပ်ပါသည်။
-    // App ကို ခဏထွက်လိုက်တာနဲ့ (Pause) Loop ကြီးတစ်ခုလုံး ချက်ချင်း Cancel ဖြစ်သွားပြီး Battery လုံးဝ (၀%) မစားတော့ပါ။
-    // App ပေါ်ပြန်ဝင်လာတာနဲ့ အလိုအလျောက် အစကနေ ပြန်အလုပ်လုပ်ပါမည်။
+    // Lifecycle-Aware Polling (3s -> 60s Cycle)
     LaunchedEffect(isRunning, lifecycleOwner) {
         if (isRunning) {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                delay(1000) // Screen ပေါ်ရောက်ပြီး/ချိတ်ဆက်ပြီး ၁ စက္ကန့်အကြာတွင် ပထမဆုံး Ping ဖမ်းမည်
+                delay(1000)
                 onTestCurrent()
-                
                 while (isActive) {
-                    delay(3000) // ၃ စက္ကန့် စောင့်ပြီး ဒုတိယအကြိမ် Ping စစ်မည်
+                    delay(3000)
                     onTestCurrent()
-
-                    delay(60000) // ထို့နောက် ၁ မိနစ် (60,000 ms) နားမည်
-                    onTestCurrent() // ၁ မိနစ် ပြည့်ပါက နောက်တစ်ကြိမ် Ping စစ်မည် (ထို့နောက် ၃ စက္ကန့်စောင့်မည့် loop သို့ ပြန်သွားမည်)
+                    delay(60000)
+                    onTestCurrent()
                 }
             }
         }
     }
 
-
-    // Animations for the Connect Button
     val buttonColor by animateColorAsState(
         targetValue = if (isRunning) Color(0xFF37474F) else MaterialTheme.colorScheme.surfaceVariant,
         animationSpec = tween(durationMillis = 500)
@@ -242,25 +262,28 @@ fun HiddifyDashboard(
         targetValue = if (isRunning) Color.White else Color.Gray,
         animationSpec = tween(durationMillis = 500)
     )
-
-        val scale by animateFloatAsState(
+    val scale by animateFloatAsState(
         targetValue = if (isRunning) 1.05f else 1f,
         animationSpec = tween(durationMillis = 300)
     )
 
-    // --- Extract Real-time Ping from displayText ---
     val realPing = remember(displayText, delayMs) {
         val match = Regex("(\\d+)\\s*ms").find(displayText)
         match?.value ?: delayMs
     }
 
+    val currentSelectedServer = remember(servers, selectedGuid) {
+        servers.find { it.guid == selectedGuid } ?: servers.firstOrNull()
+    }
+
     Column(
-        modifier = modifier.padding(24.dp),
+        modifier = modifier.padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
-        
-        // --- Status Text (Connected / Connecting / Not Connected) ---
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Status Text
         Text(
             text = when {
                 displayText == "Connecting..." -> "Connecting..."
@@ -273,8 +296,8 @@ fun HiddifyDashboard(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // --- Delay (Ping) Indicator ---
-        if (isRunning) { // (Disconnected ချိန်တွင် လုံးဝ ဖျောက်ထားရန် Condition ပြင်ဆင်ထားသည်)
+        // Real-time Ping Indicator
+        if (isRunning) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Speed,
@@ -284,22 +307,22 @@ fun HiddifyDashboard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = realPing, // <--- delayMs အစား အမှန်ကန်ဆုံး realPing ကို ပြောင်းသုံးထားသည်
+                    text = realPing,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
         } else {
-            Spacer(modifier = Modifier.height(24.dp)) // Placeholder
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // --- BIG CENTER CONNECT BUTTON ---
+        // Main Power Button
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(160.dp)
+                .size(150.dp)
                 .scale(scale)
                 .clip(CircleShape)
                 .background(buttonColor)
@@ -309,13 +332,13 @@ fun HiddifyDashboard(
                 imageVector = Icons.Default.PowerSettingsNew,
                 contentDescription = "Toggle VPN",
                 tint = iconColor,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(68.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // --- Fast Connect / Auto Sort Button ---
+        // Auto Fast Connect Button
         Button(
             onClick = onAutoTestAndSort,
             modifier = Modifier.fillMaxWidth(),
@@ -328,7 +351,158 @@ fun HiddifyDashboard(
             Spacer(modifier = Modifier.width(8.dp))
             Text("Auto Fast Connect (Test & Sort)")
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- HIDDIFY STYLE PROXY SELECTOR CARD WITH ARROW ---
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable { isExpanded = !isExpanded },
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            )
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Dns,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentSelectedServer?.profile?.remarks ?: "No Configuration",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = currentSelectedServer?.profile?.configType?.name ?: "Balancer (sticky-sessions)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    // Ping ms of Selected Server
+                    if (currentSelectedServer?.testDelayString?.isNotBlank() == true) {
+                        Text(
+                            text = currentSelectedServer.testDelayString,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (currentSelectedServer.testDelayMillis < 0L) colorPingRed else colorPing,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+
+                    // Dropdown Arrow
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Expand Proxies",
+                        modifier = Modifier
+                            .size(26.dp)
+                            .rotate(arrowRotation)
+                    )
+                }
+
+                // Expandable Proxy List
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                    ) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                        )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 240.dp)
+                        ) {
+                            items(items = servers, key = { it.guid }) { serverItem ->
+                                val isSelected = serverItem.guid == selectedGuid
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                                        .clickable {
+                                            onSelectServer(serverItem.guid)
+                                            isExpanded = false
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                        }
+                                        Column {
+                                            Text(
+                                                text = serverItem.profile.remarks,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = serverItem.profile.configType.name,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = colorConfigType
+                                            )
+                                        }
+                                    }
+                                    
+                                    // Latency ms
+                                    Text(
+                                        text = serverItem.testDelayString,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (serverItem.testDelayMillis < 0L) colorPingRed else colorPing
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-
-                
