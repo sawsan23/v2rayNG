@@ -369,21 +369,19 @@ fun HiddifyDashboard(
         animationSpec = tween(durationMillis = 300)
     )
 
-     val realPing = remember(displayText, delayMs) {
-     val match = Regex("(\\d+)\\s*ms").find(displayText)
+        val realPing = remember(displayText, delayMs) {
+        val match = Regex("(\\d+)\\s*ms").find(displayText)
         match?.value ?: delayMs
     }
 
-    // --- အသစ်ထည့်ရမည့် Code စတင် ---
-    // VPN ချိတ်ထားလျှင် အပေါ်က realPing ကိုသုံးမည်၊ မချိတ်ထားလျှင် Server ရဲ့ မူလ Ping ကိုပြမည်
-    val displayPingForCard = if (isRunning) realPing else currentSelectedServer?.testDelayString ?: ""
-    val pingColor = if (displayPingForCard.contains("-") || displayPingForCard.isBlank()) colorPingRed else colorPing
-    // --- အသစ်ထည့်ရမည့် Code အဆုံး ---
-
-
+    // ၁။ currentSelectedServer ကို အရင်ကြေညာရပါမည်
     val currentSelectedServer = remember(servers, selectedGuid) {
         servers.find { it.guid == selectedGuid } ?: servers.firstOrNull()
     }
+
+    // ၂။ ထို့နောက်မှ ၎င်းကို ယူသုံးသော displayPingForCard ကို ထားရပါမည်
+    val displayPingForCard = if (isRunning) realPing else currentSelectedServer?.testDelayString ?: ""
+    val pingColor = if (displayPingForCard.contains("-") || displayPingForCard.isBlank()) colorPingRed else colorPing
 
     Column(
         modifier = modifier.padding(horizontal = 20.dp, vertical = 12.dp),
