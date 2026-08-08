@@ -170,7 +170,7 @@ fun MainScreen(
                 )
             }
         ) { innerPadding ->
-            // --- HIDDIFY STYLE DASHBOARD UI ---
+                        // --- HIDDIFY STYLE DASHBOARD UI ---
             HiddifyDashboard(
                 modifier = Modifier
                     .fillMaxSize()
@@ -189,10 +189,12 @@ fun MainScreen(
                         onAction(MainAction.SortByTestResults)
                     }
                 },
+                onTestCurrent = { onAction(MainAction.TestCurrentServer) } 
             )
         }
     }
 }
+
 
 @Composable
 fun HiddifyDashboard(
