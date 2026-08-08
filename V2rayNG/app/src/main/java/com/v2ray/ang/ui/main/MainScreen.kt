@@ -262,14 +262,14 @@ fun MainScreen(
                 selectedGuid = uiState.selectedGuid,
                 onToggleConnection = { onAction(MainAction.ToggleService) },
                 
-                // --- ဤနေရာကို အသစ်ဖြင့် အစားထိုးပါ ---
+                                // [စည်းမျဉ်း-၂]: User မှ Manual ခလုတ် (Auto Fast Connect) နှိပ်လျှင် 50% သာ စစ်မည်
                 onAutoTestAndSort = {
                     if (!isTesting) {
                         pendingAutoSelect = true
-                        onAction(MainAction.TestRealAllServers)
+                        mainViewModel.smartPing(50) // <-- 50% (Round-Robin Random ဖြင့်)
                     }
                 },
-                // ---------------------------------
+
                 
                 onTestCurrent = { onAction(MainAction.TestCurrentServer) },
                 onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) }
