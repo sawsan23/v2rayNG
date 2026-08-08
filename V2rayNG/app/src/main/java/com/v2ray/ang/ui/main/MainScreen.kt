@@ -227,8 +227,8 @@ fun MainScreen(
                     onAction = onAction
                 )
             }
-                // (MainScreen.kt ၏ Scaffold အတွင်းရှိ Call Site)
-        } { innerPadding ->
+                
+        ) { innerPadding ->
             HiddifyDashboard(
                 modifier = Modifier
                     .fillMaxSize()
