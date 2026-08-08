@@ -39,6 +39,7 @@ fun MainTopBar(
     onAction: (MainAction) -> Unit,
     onMoreMenuAction: (MainMoreMenuAction) -> Unit
 ) {
+    // UI မှ ဖျောက်ထားမည်ဖြစ်သော်လည်း Compiler Error မတက်စေရန် State များကို ထားရှိရပါမည်
     var showImportMenu by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     val importMenuScrollState = rememberScrollState()
@@ -56,8 +57,7 @@ fun MainTopBar(
         onSearchQueryChange = onSearchQueryChange,
         onSearchClose = onSearchClose,
         searchPlaceholder = stringResource(R.string.menu_item_search),
-                // ... အပေါ်ပိုင်းက code တွေ အတူတူပါပဲ
-                navigationIcon = {
+        navigationIcon = {
             if (showSearch) {
                 IconButton(onClick = onSearchClose) {
                     Icon(painterResource(R.drawable.ic_arrow_back_24dp), contentDescription = "Back")
@@ -68,43 +68,8 @@ fun MainTopBar(
                 }
             }
         },
-        // --- ဤနေရာကို အလွတ်ထားလိုက်ပါ ---
         actions = {
             // UI မှ Search, Add နှင့် More ၃ စက် Icons များကို အပြီးတိုင် ဖျောက်ထားပါသည်
-        }
-        // -----------------------------
-    )
-}
-
-                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                    IconButton(onClick = { showImportMenu = true }) {
-                        Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = "Add")
-                    }
-                    DropdownMenu(
-                        // ... DropdownMenu အတွင်းရှိ Code များ
-                    ) {
-                        ImportMenuContent(
-                            onAction = { action ->
-                                showImportMenu = false
-                                onAction(action)
-                            }
-                        )
-                    }
-                }
-                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(painterResource(R.drawable.ic_more_vert_24dp), contentDescription = "More")
-                    }
-                    DropdownMenu(
-                        // ... DropdownMenu အတွင်းရှိ Code များ
-                    ) {
-                        MoreMenuContent { action ->
-                            showMenu = false
-                            onMoreMenuAction(action)
-                        }
-                    }
-                }
-            } // if (false) ၏ အပိတ်
         }
     )
 }
