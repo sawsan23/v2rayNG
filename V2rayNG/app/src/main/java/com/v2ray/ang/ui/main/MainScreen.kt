@@ -101,37 +101,50 @@ fun MainScreen(
         // --- ဤနေရာတွင် မူလကုဒ်များ ရှိပါသည် ---
     val servers by serverFlow.collectAsStateWithLifecycle()
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+        val context = androidx.compose.ui.platform.LocalContext.current
     val isTesting = uiState.isTesting
-    // ဤ State သည် Manual နှိပ်သည်ဖြစ်စေ၊ Auto လုပ်သည်ဖြစ်စေ Ping အပြီးတွင် အကောင်းဆုံး Key ကို ရွေးပေးရန်အတွက် ဖြစ်ပါသည်
+    
     var pendingAutoSelect by remember { mutableStateOf(false) } 
-    var hasRunStartupLogic by remember { mutableStateOf(false) }
+    // State များကို သီးခြားစီ ခွဲထုတ်လိုက်ပါသည်
+    var hasRunStartupPing by remember { mutableStateOf(false) }
 
-    // [စည်းမျဉ်း-၁]: App စဖွင့်ချိန် (Not Connected) တွင် User ကို မမေးဘဲ 10% Auto စစ်မည် (Round-Robin Random ဖြင့်)
-    LaunchedEffect(servers.isNotEmpty(), isRunning) {
-        if (servers.isNotEmpty() && !isRunning && !hasRunStartupLogic) {
-            hasRunStartupLogic = true
-            
-            val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
-            val hasDoneFirstUpdate = prefs.getBoolean("has_done_first_update", false)
-            
-            if (!hasDoneFirstUpdate) {
-                // First Install ဆိုလျှင် တစ်ကြိမ်သာ Sub ကို Update လုပ်ပါမည်
-                onAction(MainAction.UpdateSubscriptions)
-                prefs.edit().putBoolean("has_done_first_update", true).apply()
-            } else {
-                // First Install မဟုတ်လျှင် App ဖွင့်တာနဲ့ 10% ကို Auto စစ်ပါမည်
-                pendingAutoSelect = true 
-                mainViewModel.smartPing(10, servers) // <-- 10%
-            }
+    // =======================================================
+    // [လုပ်ငန်းစဉ်-၁] First Install တွင် Sub ကို (၁) ကြိမ်သာ အလိုအလျောက် Update လုပ်ခြင်း
+    // =======================================================
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        val hasDoneFirstUpdate = prefs.getBoolean("has_done_first_update", false)
+        if (!hasDoneFirstUpdate) {
+            onAction(MainAction.UpdateSubscriptions)
+            prefs.edit().putBoolean("has_done_first_update", true).apply()
         }
     }
 
-    // Ping Test ပြီးဆုံးသွားချိန် အကောင်းဆုံး (Latency အနည်းဆုံး) Key အား Auto ချိတ်ပေးမည့် Universal စနစ်
+    // =======================================================
+    // [လုပ်ငန်းစဉ်-၂] App ဖွင့်တိုင်း (UI ပေါ်ပြီး ၃ စက္ကန့်အကြာတွင်) 10% Auto Ping စစ်ခြင်း
+    // =======================================================
+    LaunchedEffect(servers.isNotEmpty(), isRunning) {
+        // Data များ ရောက်ရှိနေပြီး၊ VPN မချိတ်ရသေးချိန်၌ တစ်ကြိမ်သာ အလုပ်လုပ်မည်
+        if (servers.isNotEmpty() && !isRunning && !hasRunStartupPing) {
+            hasRunStartupPing = true // နောက်ထပ် မလုပ်စေရန် ချက်ချင်း ပိတ်ထားမည်
+            
+            // UI အပြည့်အဝ ပေါ်လာရန်နှင့် Service များ အသင့်ဖြစ်ရန် ၃ စက္ကန့် တိတိ စောင့်ပါမည် 
+            // (delay သည် Non-blocking ဖြစ်၍ App လုံးဝ Hang/Lag မည် မဟုတ်ပါ)
+            kotlinx.coroutines.delay(5000)
+            
+            // ၃ စက္ကန့်ပြည့်မှသာ Background မှ 10% Ping ကို ဘေးကင်းစွာ စတင်ပါမည်
+            pendingAutoSelect = true 
+            mainViewModel.smartPing(10, servers) 
+        }
+    }
+
+    // =======================================================
+    // [လုပ်ငန်းစဉ်-၃] Ping Test ပြီးဆုံးချိန် အကောင်းဆုံး Key အား Auto ချိတ်ပေးမည့် စနစ်
+    // =======================================================
     LaunchedEffect(isTesting) {
         if (!isTesting && pendingAutoSelect) {
             pendingAutoSelect = false
-            kotlinx.coroutines.delay(1000) // Ping Result များ UI သို့ ရောက်လာရန် ၁ စက္ကန့် စောင့်ပါမည်
+            kotlinx.coroutines.delay(1000) 
             
             val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
             if (bestServer != null) {
@@ -143,18 +156,21 @@ fun MainScreen(
         }
     }
 
-    // [စည်းမျဉ်း-၃]: တစ်နေ့ ၈ ကြိမ် (၃ နာရီတစ်ခါ) Background မှ Key အားလုံး (100%) ကို Auto စစ်မည်
+    // =======================================================
+    // [လုပ်ငန်းစဉ်-၄] တစ်နေ့ ၈ ကြိမ် (၃ နာရီတစ်ခါ) Background မှ Key အားလုံး (100%) ကို Auto စစ်မည်
+    // =======================================================
     LaunchedEffect(isRunning) {
         if (isRunning) {
-            while (isActive) {
-                kotlinx.coroutines.delay(3 * 60 * 60 * 1000L) // ၃ နာရီ (10,800,000 ms) တိတိ စောင့်ပါမည်
+            while (kotlinx.coroutines.isActive) {
+                kotlinx.coroutines.delay(3 * 60 * 60 * 1000L) 
                 if (!isTesting) { 
                     pendingAutoSelect = true
-                    onAction(MainAction.TestRealAllServers) // <-- 100% (All Servers)
+                    onAction(MainAction.TestRealAllServers) 
                 }
             }
         }
     }
+
 
 
     
