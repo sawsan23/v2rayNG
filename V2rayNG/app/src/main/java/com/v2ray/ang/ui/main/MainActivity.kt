@@ -92,6 +92,39 @@ class MainActivity : HelperBaseComponentActivity() {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        --- a/MainActivity.kt
++++ b/MainActivity.kt
+@@ -62,6 +62,29 @@
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        // =======================================================
++        // [Crash Logger] App သေသွားပါက Error ကို ဖုန်းထဲသို့ မှတ်သားမည့်စနစ်
++        // =======================================================
++        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
++        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
++            try {
++                val logDir = getExternalFilesDir(null)
++                if (logDir != null) {
++                    val logFile = java.io.File(logDir, "crash_log.txt")
++                    val writer = java.io.FileWriter(logFile, true)
++                    writer.append("\n========== CRASH REPORT ==========\n")
++                    writer.append("Time: ${java.util.Date()}\n")
++                    writer.append("Thread: ${thread.name}\n")
++                    writer.append(android.util.Log.getStackTraceString(throwable))
++                    writer.append("\n==================================\n")
++                    writer.flush()
++                    writer.close()
++                }
++            } catch (e: Exception) { }
++            defaultHandler?.uncaughtException(thread, throwable)
++        }
++        // =======================================================
++
+         super.onCreate(savedInstanceState)
+         mainViewModel.onAction(MainAction.Initialize)
+         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)
 
