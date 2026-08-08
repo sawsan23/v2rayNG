@@ -97,7 +97,46 @@ fun MainScreen(
         mainViewModel.serversForGroup(uiState.selectedGroupId)
     }
     val servers by serverFlow.collectAsStateWithLifecycle()
+    // --- Auto Select & 15-Min Loop States ---
+    val isTesting = uiState.isTesting
+    var pendingAutoSelect by remember { mutableStateOf(false) }
 
+    // (၁၅) မိနစ် တစ်ကြိမ် အလိုအလျောက် Ping စစ်ပြီး အကောင်းဆုံး Server သို့ ပြောင်းချိတ်မည့် နောက်ကွယ်က Loop
+    LaunchedEffect(isRunning) {
+        if (isRunning) {
+            while (isActive) {
+                delay(15 * 60 * 1000L) // ၁၅ မိနစ် (900,000 ms) စောင့်ပါမည်
+                if (!isTesting) { 
+                    pendingAutoSelect = true
+                    onAction(MainAction.TestRealAllServers)
+                }
+            }
+        }
+    }
+
+    // Ping Test ပြီးဆုံးသွားချိန်တွင် အကောင်းဆုံး Server ကို ရှာဖွေ၍ Auto Select ပြုလုပ်ပေးမည့် Observer
+    LaunchedEffect(isTesting) {
+        if (!isTesting && pendingAutoSelect) {
+            pendingAutoSelect = false
+            
+            // ViewModel မှ Ping အသစ်များ UI သို့ ရောက်လာရန် ခဏစောင့်ပါမည်
+            delay(1000)
+            
+            // Ping (MS) သုညထက်ကြီးပြီး အနည်းဆုံးဖြစ်သော Server (အကောင်းဆုံး Key) ကို ရှာဖွေခြင်း
+            val bestServer = servers.filter { it.testDelayMillis > 0L }.minByOrNull { it.testDelayMillis }
+            
+            if (bestServer != null) {
+                // အကယ်၍ အကောင်းဆုံး Server သည် လက်ရှိချိတ်ထားသော Server မဟုတ်ခဲ့လျှင် ၎င်းဆီသို့ ပြောင်းချိတ်ပါမည်
+                if (bestServer.guid != uiState.selectedGuid) {
+                    onAction(MainAction.SelectServer(bestServer.guid))
+                }
+                // နောက်ဆုံးအနေဖြင့် အကောင်းဆုံး Server အပေါ်ဆုံးသို့ ရောက်သွားစေရန် List ကို Sort လုပ်ပါမည်
+                onAction(MainAction.SortByTestResults)
+            }
+        }
+    }
+
+    
     val isDarkTheme = LocalDarkTheme.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -226,9 +265,13 @@ fun HiddifyDashboard(
     servers: List<ServersCache>,
     selectedGuid: String?,
     onToggleConnection: () -> Unit,
-    onAutoTestAndSort: () -> Unit,
-    onTestCurrent: () -> Unit,
-    onSelectServer: (String) -> Unit
+                    onAutoTestAndSort = {
+                    if (!isTesting) {
+                        pendingAutoSelect = true
+                        onAction(MainAction.TestRealAllServers)
+                    }
+                },
+
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var isExpanded by remember { mutableStateOf(false) }
