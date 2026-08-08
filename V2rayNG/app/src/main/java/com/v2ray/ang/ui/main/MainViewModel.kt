@@ -820,38 +820,44 @@ class MainViewModel(
     // --------------------------------------
 
 
-    // --- Smart Pre-Select (10% Random + Target Wgcf Ports: 2408, 500, 1701) ---
-    fun smartPreSelectPing() {
+        // --- Smart Ping (10% သို့မဟုတ် 50% Random + Target Ports (2408, 500, 1701) မျှတစွာပါဝင်စေရန်) ---
+    fun smartPing(percentage: Int) {
         val groupId = uiState.value.selectedGroupId
         val servers = currentServers()
         if (servers.isEmpty()) return
         
-        // ၁။ စုစုပေါင်း Key ၏ ၁၀ ရာခိုင်နှုန်းကို တွက်ချက်ခြင်း (အနည်းဆုံး ၁ ခု ပါရမည်)
-        val quota = (servers.size / 10).coerceAtLeast(1)
-        
+        // သတ်မှတ်ထားသော ရာခိုင်နှုန်းအတိုင်း Quota တွက်ချက်ခြင်း
+        val quota = (servers.size * percentage / 100).coerceAtLeast(1)
         val selectedGuids = mutableSetOf<String>()
-        val targetPorts = listOf("2408", "500", "1701") // အစ်ကိုသတ်မှတ်ထားသော Port ၃ ခု
         
-        // ၂။ Target Port (2408, 500, 1701) တစ်ခုစီအတွက် အနည်းဆုံး Key တစ်ခုစီကို မဖြစ်မနေ ရှာဖွေထည့်သွင်းခြင်း
-        targetPorts.forEach { port ->
-            val serverWithPort = servers.filter { it.profile.serverPort.toString() == port }.randomOrNull()
-            serverWithPort?.let { selectedGuids.add(it.guid) }
+        // (၁) Port ၃ မျိုးကို အုပ်စုခွဲပြီး App ပိတ်/ဖွင့်တိုင်း မတူညီစေရန် Shuffled ဖြင့် Random မွှေနှောက်ခြင်း
+        val g2408 = servers.filter { it.profile.serverPort.toString() == "2408" }.shuffled().toMutableList()
+        val g500 = servers.filter { it.profile.serverPort.toString() == "500" }.shuffled().toMutableList()
+        val g1701 = servers.filter { it.profile.serverPort.toString() == "1701" }.shuffled().toMutableList()
+        val others = servers.filter { it.profile.serverPort.toString() !in listOf("2408", "500", "1701") }.shuffled().toMutableList()
+
+        val targetGroups = listOf(g2408, g500, g1701)
+        var turn = 0
+        
+        // (၂) Round-Robin Algorithm - Port ၃ မျိုးစလုံးမှ တစ်လှည့်စီ မျှတစွာ ဆွဲထုတ်ခြင်း
+        while (selectedGuids.size < quota && targetGroups.any { it.isNotEmpty() }) {
+            val group = targetGroups[turn % 3]
+            if (group.isNotEmpty()) {
+                selectedGuids.add(group.removeAt(0).guid)
+            }
+            turn++
         }
         
-        // ၃။ လိုအပ်သော ၁၀% အရေအတွက် မပြည့်သေးပါက ကျန်သော Key များထဲမှ Random (ပဟမ်း) ထပ်ဖြည့်ခြင်း
-        val remaining = servers.filter { it.guid !in selectedGuids }.shuffled()
-        val needed = quota - selectedGuids.size
-        if (needed > 0) {
-            selectedGuids.addAll(remaining.take(needed).map { it.guid })
+        // (၃) Port ၃ မျိုးလုံး ကုန်သွားသော်လည်း Quota မပြည့်သေးပါက ကျန်သော Key များထဲမှ Random ဖြည့်ခြင်း
+        while (selectedGuids.size < quota && others.isNotEmpty()) {
+            selectedGuids.add(others.removeAt(0).guid)
         }
         
-        // ၄။ ဤ ၁၀% ကိုသာ Ping အသစ်ပြစေရန် ယခင် Ping ဟောင်းများ အကုန်ဖျက်ခြင်း
         dataSource.clearAllTestDelayResults(servers.map { it.guid })
-        
         testingGroupId = groupId
-        _uiState.update { it.copy(isTesting = true, statusText = "Smart Pre-selecting...") }
+        _uiState.update { it.copy(isTesting = true, statusText = "Testing $percentage% Servers...") }
         
-        // ၅။ ရွေးချယ်ထားသော Key များကိုသာ Background မှ Ping Test စစ်ဆေးခိုင်းခြင်း
+        // Background တွင် Ping တိုင်းတာခြင်း
         viewModelScope.launch(ioDispatcher) {
             cacheMutex.withLock { groupDataCache.remove(groupId) }
             dataSource.sendMsg2TestService(
