@@ -829,9 +829,12 @@ class MainViewModel(
         _uiState.update { it.copy(isTesting = true, statusText = "Testing $percentage% Servers...") }
         
         // Database Operations နှင့် Filtering အားလုံးကို Background Thread ပေါ်သို့ ရွှေ့ပါမည် (Crash မဖြစ်စေရန်)
-        viewModelScope.launch(ioDispatcher) {
+             // [Root Cause Fix] Main Thread ပေါ်ရောက်ပြီး Crash မဖြစ်စေရန် IO ကို အတိအကျ ကြေညာပေးခြင်း
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val quota = (servers.size * percentage / 100).coerceAtLeast(1)
+                // ... (အောက်ဘက်ရှိ Filtering Logic များနှင့် Database ရှင်းသည့် Code များ အားလုံး အရင်အတိုင်း အတူတူပင် ဖြစ်ပါသည်) ...
+
                 val selectedGuids = mutableSetOf<String>()
                 
                 val g2408 = servers.filter { it.profile.serverPort.toString() == "2408" }.shuffled().toMutableList()
