@@ -122,7 +122,7 @@ fun MainScreen(
             } else {
                 // First Install မဟုတ်လျှင် App ဖွင့်တာနဲ့ 10% ကို Auto စစ်ပါမည်
                 pendingAutoSelect = true 
-                mainViewModel.smartPing(10) // <-- 10%
+                mainViewModel.smartPing(10, servers) // <-- 10%
             }
         }
     }
@@ -266,7 +266,7 @@ fun MainScreen(
                 onAutoTestAndSort = {
                     if (!isTesting) {
                         pendingAutoSelect = true
-                        mainViewModel.smartPing(50) // <-- 50% (Round-Robin Random ဖြင့်)
+                        mainViewModel.smartPing(50, servers)  // <-- 50% (Round-Robin Random ဖြင့်)
                     }
                 },
 
