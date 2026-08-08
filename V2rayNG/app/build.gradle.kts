@@ -16,7 +16,7 @@ android {
         versionCode = 742
         versionName = "2.3.2"
 
-        val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
+                val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
             abi {
                 isEnable = true
@@ -24,16 +24,16 @@ android {
                 if (!abiFilterList.isNullOrEmpty()) {
                     include(*abiFilterList.toTypedArray())
                 } else {
+                    // Testing အမြန်လုပ်ရန် arm64-v8a တစ်မျိုးတည်းကိုသာ ထည့်သွင်းပါမည်
                     include(
-                        "arm64-v8a",
-                        "armeabi-v7a",
-                        "x86_64",
-                        "x86"
+                        "arm64-v8a"
                     )
                 }
-                isUniversalApk = abiFilterList.isNullOrEmpty()
+                // Testing အတွက် APK ၅ ခုပွားထွက်ခြင်းကို တားဆီးရန် Universal APK ထုတ်ခြင်းကို ပိတ်ပါမည်
+                isUniversalApk = false
             }
         }
+
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
