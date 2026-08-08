@@ -227,7 +227,8 @@ fun MainScreen(
                     onAction = onAction
                 )
             }
-        ) { innerPadding ->
+                // (MainScreen.kt ၏ Scaffold အတွင်းရှိ Call Site)
+        } { innerPadding ->
             HiddifyDashboard(
                 modifier = Modifier
                     .fillMaxSize()
@@ -239,22 +240,25 @@ fun MainScreen(
                 servers = servers,
                 selectedGuid = uiState.selectedGuid,
                 onToggleConnection = { onAction(MainAction.ToggleService) },
+                
+                // --- ဤနေရာကို အသစ်ဖြင့် အစားထိုးပါ ---
                 onAutoTestAndSort = {
-                    onAction(MainAction.UpdateSubscriptions)
-                    scope.launch {
-                        kotlinx.coroutines.delay(2000)
+                    if (!isTesting) {
+                        pendingAutoSelect = true
                         onAction(MainAction.TestRealAllServers)
-                        kotlinx.coroutines.delay(3000)
-                        onAction(MainAction.SortByTestResults)
                     }
                 },
+                // ---------------------------------
+                
                 onTestCurrent = { onAction(MainAction.TestCurrentServer) },
                 onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) }
             )
         }
+
     }
 }
 
+// (MainScreen.kt ၏ အောက်ပိုင်း)
 @Composable
 fun HiddifyDashboard(
     modifier: Modifier = Modifier,
@@ -265,15 +269,12 @@ fun HiddifyDashboard(
     servers: List<ServersCache>,
     selectedGuid: String?,
     onToggleConnection: () -> Unit,
-                    onAutoTestAndSort = {
-                    if (!isTesting) {
-                        pendingAutoSelect = true
-                        onAction(MainAction.TestRealAllServers)
-                    }
-                },
-
+    onAutoTestAndSort: () -> Unit, // <--- Type ပြန်ထည့်ပေးရပါမည်
+    onTestCurrent: () -> Unit, // <--- ပျောက်သွားသော Parameter ပြန်ထည့်ပါ
+    onSelectServer: (String) -> Unit // <--- ပျောက်သွားသော Parameter ပြန်ထည့်ပါ
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+ 
     var isExpanded by remember { mutableStateOf(false) }
     val arrowRotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
