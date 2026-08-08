@@ -819,6 +819,53 @@ class MainViewModel(
     }
     // --------------------------------------
 
+
+    // --- Smart Pre-Select (10% Random + Target Wgcf Ports: 2408, 500, 1701) ---
+    fun smartPreSelectPing() {
+        val groupId = uiState.value.selectedGroupId
+        val servers = currentServers()
+        if (servers.isEmpty()) return
+        
+        // ၁။ စုစုပေါင်း Key ၏ ၁၀ ရာခိုင်နှုန်းကို တွက်ချက်ခြင်း (အနည်းဆုံး ၁ ခု ပါရမည်)
+        val quota = (servers.size / 10).coerceAtLeast(1)
+        
+        val selectedGuids = mutableSetOf<String>()
+        val targetPorts = listOf("2408", "500", "1701") // အစ်ကိုသတ်မှတ်ထားသော Port ၃ ခု
+        
+        // ၂။ Target Port (2408, 500, 1701) တစ်ခုစီအတွက် အနည်းဆုံး Key တစ်ခုစီကို မဖြစ်မနေ ရှာဖွေထည့်သွင်းခြင်း
+        targetPorts.forEach { port ->
+            val serverWithPort = servers.filter { it.profile.serverPort.toString() == port }.randomOrNull()
+            serverWithPort?.let { selectedGuids.add(it.guid) }
+        }
+        
+        // ၃။ လိုအပ်သော ၁၀% အရေအတွက် မပြည့်သေးပါက ကျန်သော Key များထဲမှ Random (ပဟမ်း) ထပ်ဖြည့်ခြင်း
+        val remaining = servers.filter { it.guid !in selectedGuids }.shuffled()
+        val needed = quota - selectedGuids.size
+        if (needed > 0) {
+            selectedGuids.addAll(remaining.take(needed).map { it.guid })
+        }
+        
+        // ၄။ ဤ ၁၀% ကိုသာ Ping အသစ်ပြစေရန် ယခင် Ping ဟောင်းများ အကုန်ဖျက်ခြင်း
+        dataSource.clearAllTestDelayResults(servers.map { it.guid })
+        
+        testingGroupId = groupId
+        _uiState.update { it.copy(isTesting = true, statusText = "Smart Pre-selecting...") }
+        
+        // ၅။ ရွေးချယ်ထားသော Key များကိုသာ Background မှ Ping Test စစ်ဆေးခိုင်းခြင်း
+        viewModelScope.launch(ioDispatcher) {
+            cacheMutex.withLock { groupDataCache.remove(groupId) }
+            dataSource.sendMsg2TestService(
+                TestServiceMessage(
+                    key = AppConfig.MSG_MEASURE_CONFIG_START,
+                    subscriptionId = groupId,
+                    serverGuids = selectedGuids.toList(),
+                    onlyTcp = false
+                )
+            )
+        }
+    }
+
+    
     // ---------- Factory ----------
     class Factory(private val application: Application, private val dataSource: MainDataSource) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
