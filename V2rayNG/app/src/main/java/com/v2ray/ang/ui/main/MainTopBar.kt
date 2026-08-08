@@ -56,6 +56,7 @@ fun MainTopBar(
         onSearchQueryChange = onSearchQueryChange,
         onSearchClose = onSearchClose,
         searchPlaceholder = stringResource(R.string.menu_item_search),
+                // ... အပေါ်ပိုင်းက code တွေ အတူတူပါပဲ
         navigationIcon = {
             if (showSearch) {
                 IconButton(onClick = onSearchClose) {
@@ -68,51 +69,43 @@ fun MainTopBar(
             }
         },
         actions = {
-            if (!showSearch) {
-                IconButton(onClick = { onSearchToggle(true) }) {
-                    Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = "filter")
-                }
-            }
-            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                IconButton(onClick = { showImportMenu = true }) {
-                    Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = "Add")
-                }
-                DropdownMenu(
-                    expanded = showImportMenu,
-                    onDismissRequest = { showImportMenu = false },
-                    scrollState = importMenuScrollState,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier
-                        .heightIn(max = maxMenuHeight)
-                        .verticalScrollbar(importMenuScrollState)
-                ) {
-                    ImportMenuContent(
-                        onAction = { action ->
-                            showImportMenu = false
-                            onAction(action)
-                        }
-                    )
-                }
-            }
-            Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(painterResource(R.drawable.ic_more_vert_24dp), contentDescription = "More")
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    scrollState = moreMenuScrollState,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier
-                        .heightIn(max = maxMenuHeight)
-                        .verticalScrollbar(moreMenuScrollState)
-                ) {
-                    MoreMenuContent { action ->
-                        showMenu = false
-                        onMoreMenuAction(action)
+            // UI မှ Search, Add နှင့် More ၃ စက် Icons များကို ဖျောက်ထားပါသည်။
+            // နောက်ကွယ်မှ Action များကိုတော့ လုံးဝ မဖျက်ပစ်ထားပါ။
+            if (false) {
+                if (!showSearch) {
+                    IconButton(onClick = { onSearchToggle(true) }) {
+                        Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = "filter")
                     }
                 }
-            }
+                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+                    IconButton(onClick = { showImportMenu = true }) {
+                        Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = "Add")
+                    }
+                    DropdownMenu(
+                        // ... DropdownMenu အတွင်းရှိ Code များ
+                    ) {
+                        ImportMenuContent(
+                            onAction = { action ->
+                                showImportMenu = false
+                                onAction(action)
+                            }
+                        )
+                    }
+                }
+                Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(painterResource(R.drawable.ic_more_vert_24dp), contentDescription = "More")
+                    }
+                    DropdownMenu(
+                        // ... DropdownMenu အတွင်းရှိ Code များ
+                    ) {
+                        MoreMenuContent { action ->
+                            showMenu = false
+                            onMoreMenuAction(action)
+                        }
+                    }
+                }
+            } // if (false) ၏ အပိတ်
         }
     )
 }
