@@ -57,7 +57,7 @@ fun MainTopBar(
         onSearchClose = onSearchClose,
         searchPlaceholder = stringResource(R.string.menu_item_search),
                 // ... အပေါ်ပိုင်းက code တွေ အတူတူပါပဲ
-        navigationIcon = {
+                navigationIcon = {
             if (showSearch) {
                 IconButton(onClick = onSearchClose) {
                     Icon(painterResource(R.drawable.ic_arrow_back_24dp), contentDescription = "Back")
@@ -68,15 +68,14 @@ fun MainTopBar(
                 }
             }
         },
+        // --- ဤနေရာကို အလွတ်ထားလိုက်ပါ ---
         actions = {
-            // UI မှ Search, Add နှင့် More ၃ စက် Icons များကို ဖျောက်ထားပါသည်။
-            // နောက်ကွယ်မှ Action များကိုတော့ လုံးဝ မဖျက်ပစ်ထားပါ။
-            if (false) {
-                if (!showSearch) {
-                    IconButton(onClick = { onSearchToggle(true) }) {
-                        Icon(painterResource(R.drawable.ic_search_24dp), contentDescription = "filter")
-                    }
-                }
+            // UI မှ Search, Add နှင့် More ၃ စက် Icons များကို အပြီးတိုင် ဖျောက်ထားပါသည်
+        }
+        // -----------------------------
+    )
+}
+
                 Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                     IconButton(onClick = { showImportMenu = true }) {
                         Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = "Add")
